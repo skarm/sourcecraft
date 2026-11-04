@@ -1,0 +1,29 @@
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ['1.26.x', 'stable']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache: false
+      - run: go run ./internal/generate -check
+      - run: go run ./internal/generate -spec api/appsec.openapi.json -check
+      - name: Check public Go API compatibility
+        run: go run ./internal/apicheck
+      - run: go test -race ./...
+      - run: go vet ./...
+      - name: Check Go 1.26 modernization
+        if: matrix.go == '1.26.x'
+        run: |
+          go fix ./...
+          git diff --exit-code -- '*.go'

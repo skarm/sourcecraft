@@ -1,0 +1,3295 @@
+{
+  "openapi" : "3.1.0",
+  "components" : {
+    "schemas" : {
+      "Activity" : {
+        "type" : "object",
+        "properties" : {
+          "uuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "activityComment" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/ActivityComment"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "type" : {
+            "$ref" : "#/components/schemas/ActivityType"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "dueDate" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "createdByUserId" : {
+            "type" : "string"
+          },
+          "createdByUserPublicId" : {
+            "type" : "string"
+          },
+          "assignedToUserId" : {
+            "type" : "string"
+          },
+          "newStatus" : {
+            "$ref" : "#/components/schemas/DefectGroupStatus"
+          },
+          "entityTags" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TagDto"
+            }
+          },
+          "attachments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AttachmentDto"
+            }
+          },
+          "isDeleted" : {
+            "type" : "boolean"
+          },
+          "deleted" : {
+            "type" : "boolean"
+          },
+          "previousStatus" : {
+            "$ref" : "#/components/schemas/DefectGroupStatus"
+          }
+        }
+      },
+      "ActivityComment" : {
+        "type" : "object",
+        "properties" : {
+          "uuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "content" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ActivityType" : {
+        "type" : "string",
+        "enum" : [ "ACTIVITY_TYPE_UNSPECIFIED", "CREATED", "ASSIGNED", "REASSIGNED", "STATUS_CHANGED", "COMMENT_ADDED", "PRIORITY_ADDED", "PRIORITY_CHANGED", "DUE_DATE_ADDED", "DUE_DATE_CHANGED", "DUE_DATE_BREACHED", "TAGS_ADDED", "TAGS_CHANGED", "RELATED_ISSUES_CHANGED", "AI_SUGGESTION_ADDED", "RELATED_ISSUES_REMOVED", "AI_FIX_STARTED", "AI_FIX_PR_LINKED", "AI_STATUS_CHANGED", "UNRECOGNIZED" ]
+      },
+      "AllowedTransitionsResponse" : {
+        "type" : "object",
+        "required" : [ "currentStatus", "allowedTransitions" ],
+        "properties" : {
+          "currentStatus" : {
+            "type" : "string",
+            "description" : "Current status of the defect group",
+            "examples" : [ "OPEN" ]
+          },
+          "allowedTransitions" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            },
+            "description" : "Statuses the defect group is allowed to transition to",
+            "examples" : [ [ "RESOLVED" ] ]
+          }
+        }
+      },
+      "AppsecStatus" : {
+        "type" : "string",
+        "enum" : [ "APPSEC_STATUS_UNSPECIFIED", "ENABLED", "DISABLED", "UNRECOGNIZED" ]
+      },
+      "Artifact" : {
+        "type" : "object",
+        "properties" : {
+          "uuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "link" : {
+            "type" : "string"
+          },
+          "engineName" : {
+            "type" : "string"
+          },
+          "engineType" : {
+            "$ref" : "#/components/schemas/EngineType"
+          },
+          "scan" : {
+            "$ref" : "#/components/schemas/Scan"
+          }
+        }
+      },
+      "AttachmentDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          }
+        }
+      },
+      "BatchDefectGroupsLinksRequest" : {
+        "type" : "object",
+        "required" : [ "updates" ],
+        "properties" : {
+          "updates" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DefectGroupLinksUpdate"
+            },
+            "minItems" : 1
+          }
+        }
+      },
+      "BatchDefectGroupsLinksResponse" : {
+        "type" : "object",
+        "required" : [ "inserted" ],
+        "properties" : {
+          "inserted" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Links actually inserted; already existing ones and links for defect groups missing from this repository are skipped"
+          }
+        }
+      },
+      "BatchDefectGroupsStatusRequest" : {
+        "type" : "object",
+        "properties" : {
+          "comment" : {
+            "type" : "string",
+            "description" : "Optional comment attached to every status-change activity (max 1023 characters)",
+            "examples" : [ "Triaged as a false positive" ],
+            "maxLength" : 1023
+          },
+          "updates" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DefectGroupStatusUpdateByPublicId"
+            },
+            "minItems" : 1
+          }
+        },
+        "required" : [ "updates" ]
+      },
+      "BatchDefectGroupsStatusResponse" : {
+        "type" : "object",
+        "required" : [ "updated", "notUpdated" ],
+        "properties" : {
+          "updated" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Number of defect groups the status change was applied to"
+          },
+          "notUpdated" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Number of requested updates not applied: forbidden transitions or unchanged statuses"
+          }
+        }
+      },
+      "BatchDefectGroupsTicketUrlRequest" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "string",
+            "description" : "Optional custom comment text for the defect group activity. If not provided or empty, a default comment will be generated automatically based on the ticket URL changes. Default comments follow the pattern: 'Ticket URL set: <url>', 'Ticket URL changed from <old> to <new>', or 'Ticket URL removed'.",
+            "examples" : [ "Linking to JIRA ticket for tracking this security issue" ]
+          },
+          "updates" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DefectGroupTicketUrlUpdate"
+            },
+            "minItems" : 1
+          }
+        },
+        "required" : [ "updates" ]
+      },
+      "ChangeRepositoryStatusesRequest" : {
+        "type" : "object",
+        "properties" : {
+          "statusChanges" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/AppsecStatus"
+            },
+            "description" : "Map of status type (APPSEC, PR_SCAN, UPLOAD, BACKGROUND_SCAN) to status value (ENABLED, DISABLED). Supports both full and partial (delta) updates.",
+            "examples" : [ {
+              "APPSEC" : "ENABLED",
+              "PR_SCAN" : "DISABLED"
+            } ]
+          },
+          "engineTypeStatusChanges" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/AppsecStatus"
+            },
+            "description" : "Map of engine type (SA, SCA, SAST, SECRETS, SBOM_SPDX_GEN, SBOM_CYCLONEDX_GEN) to status value (ENABLED, DISABLED). Supports both full and partial (delta) updates.",
+            "examples" : [ {
+              "SA" : "ENABLED",
+              "SAST" : "DISABLED"
+            } ]
+          },
+          "appsecRepositorySettings" : {
+            "description" : "Opt-in repository-level feature settings to apply. An absent bag or an absent inner field means \"leave the current value unchanged\" (partial update)",
+            "type" : [ "object", "null" ],
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/RestAppsecSettings"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        }
+      },
+      "CodeFlowStep" : {
+        "type" : "object",
+        "properties" : {
+          "uuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "finding" : {
+            "$ref" : "#/components/schemas/Finding"
+          },
+          "fileName" : {
+            "type" : "string"
+          },
+          "startLine" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "endLine" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "startColumn" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "endColumn" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "codeBlock" : {
+            "type" : [ "string", "null" ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "stepOrder" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "codeFlowIndex" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "threadFlowIndex" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "Commit" : {
+        "type" : "object",
+        "properties" : {
+          "uuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "hash" : {
+            "type" : "string"
+          },
+          "repository" : {
+            "$ref" : "#/components/schemas/Repository"
+          },
+          "scans" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/Scan"
+            }
+          }
+        }
+      },
+      "CreateCommentRequest" : {
+        "type" : "object",
+        "properties" : {
+          "defectGroupUuid" : {
+            "type" : [ "string", "null" ],
+            "description" : "UUID of the defect group with you would like to add comment to. Exactly one of defectGroupUuid or defectGroupPublicId must be provided.",
+            "examples" : [ "0199140f-4343-7c06-a7e3-b835c305b629" ]
+          },
+          "defectGroupPublicId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "Public id (#N) of the defect group. Exactly one of defectGroupUuid or defectGroupPublicId must be provided.",
+            "examples" : [ 42 ]
+          },
+          "content" : {
+            "type" : "string",
+            "description" : "Comment content (max 1023 characters)",
+            "examples" : [ "This looks like a false positive" ],
+            "pattern" : "\\S",
+            "maxLength" : 1023
+          }
+        },
+        "required" : [ "content" ]
+      },
+      "DastContext" : {
+        "type" : "object",
+        "properties" : {
+          "uuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "finding" : {
+            "$ref" : "#/components/schemas/Finding"
+          },
+          "webRequest" : {
+            "type" : [ "string", "null" ]
+          },
+          "webResponse" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "DefectGroup" : {
+        "type" : "object",
+        "properties" : {
+          "uuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "rule" : {
+            "$ref" : "#/components/schemas/Rule"
+          },
+          "codeBlock" : {
+            "type" : "string"
+          },
+          "codeBlockHash" : {
+            "type" : "string"
+          },
+          "commit" : {
+            "$ref" : "#/components/schemas/Commit"
+          },
+          "activities" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Activity"
+            }
+          },
+          "latestCommitFoundHash" : {
+            "type" : "string"
+          },
+          "latestStartLine" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "latestEndLine" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "latestStartColumn" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "latestEndColumn" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "latestFileName" : {
+            "type" : "string"
+          },
+          "latestTimeFound" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "firstCommitFoundHash" : {
+            "type" : "string"
+          },
+          "firstTimeFound" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "status" : {
+            "$ref" : "#/components/schemas/DefectGroupStatus"
+          },
+          "previousStatus" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/DefectGroupStatus"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "neuroTriageUuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "fixOperationUuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "neuroScore" : {
+            "$ref" : "#/components/schemas/Severity"
+          },
+          "repository" : {
+            "$ref" : "#/components/schemas/Repository"
+          },
+          "publicId" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "DefectGroupDto" : {
+        "type" : "object",
+        "required" : [ "id", "ruleName", "codeBlock", "fileName", "latestCommit", "latestTimeFound", "gitRepo", "status", "severity", "cvssScore", "engine", "neuroTriageUuid", "neuroScore", "firstCommit", "firstTimeFound", "uuid", "ruleId" ],
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64",
+            "deprecated" : true
+          },
+          "ruleName" : {
+            "type" : "string"
+          },
+          "codeBlock" : {
+            "type" : "string"
+          },
+          "fileName" : {
+            "type" : "string"
+          },
+          "latestCommit" : {
+            "type" : "string"
+          },
+          "latestTimeFound" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "gitRepo" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "severity" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "cvssScore" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "engine" : {
+            "type" : "string"
+          },
+          "neuroTriageUuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "neuroScore" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "firstCommit" : {
+            "type" : "string"
+          },
+          "firstTimeFound" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "uuid" : {
+            "$ref" : "#/components/schemas/UUID"
+          },
+          "ruleId" : {
+            "type" : "string"
+          },
+          "findingsCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "publicId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "fixOperationUuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "engineType" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "startLine" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "endLine" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "startColumn" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "endColumn" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "helpText" : {
+            "type" : [ "string", "null" ]
+          },
+          "links" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DefectGroupLinkDto"
+            }
+          }
+        }
+      },
+      "DefectGroupLinkDto" : {
+        "type" : "object",
+        "required" : [ "type", "url" ],
+        "properties" : {
+          "type" : {
+            "$ref" : "#/components/schemas/LinkType"
+          },
+          "url" : {
+            "type" : "string"
+          }
+        }
+      },
+      "DefectGroupLinksUpdate" : {
+        "type" : "object",
+        "required" : [ "defectGroupUuid", "links" ],
+        "properties" : {
+          "defectGroupUuid" : {
+            "type" : "string",
+            "description" : "UUID of the defect group to attach the links to",
+            "examples" : [ "0199140f-4343-7c06-a7e3-b835c305b629" ],
+            "pattern" : "\\S"
+          },
+          "links" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/LinkToAdd"
+            },
+            "minItems" : 1
+          }
+        }
+      },
+      "DefectGroupStatus" : {
+        "type" : "string",
+        "enum" : [ "OPEN", "RESOLVED_FIXED", "RESOLVED_FP", "RESOLVED_PROJECT_NOT_AFFECTED", "RESOLVED_TOLERABLE", "RESOLVED_DUPLICATE", "TRIAGE_IN_PROGRESS", "TRIAGED_TP", "FIX_IN_PROGRESS", "RESOLVED_AUTOFIXED", "UNRECOGNIZED" ]
+      },
+      "DefectGroupStatusUpdateByPublicId" : {
+        "type" : "object",
+        "required" : [ "publicId", "status" ],
+        "properties" : {
+          "publicId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Public per-repository number of the defect group (the #N shown in the UI)",
+            "examples" : [ 42 ]
+          },
+          "status" : {
+            "type" : "string",
+            "description" : "New status: one of the DefectGroupStatus enum names",
+            "examples" : [ "RESOLVED_FP" ],
+            "pattern" : "\\S"
+          }
+        }
+      },
+      "DefectGroupTicketUrlUpdate" : {
+        "type" : "object",
+        "properties" : {
+          "defectGroupId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Internal numeric ID of the defect group (deprecated, use defectGroupUuid instead)",
+            "deprecated" : true,
+            "examples" : [ 12345 ]
+          },
+          "defectGroupUuid" : {
+            "type" : [ "string", "null" ],
+            "description" : "UUID of the defect group. Takes priority over defectGroupId when both are provided.",
+            "examples" : [ "0199140f-4343-7c06-a7e3-b835c305b629" ]
+          },
+          "ticketUrl" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        },
+        "required" : [ "ticketUrl" ]
+      },
+      "Dependency" : {
+        "type" : "object",
+        "properties" : {
+          "uuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "purl" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "version" : {
+            "type" : [ "string", "null" ]
+          },
+          "packageManager" : {
+            "type" : [ "string", "null" ]
+          },
+          "scans" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/Scan"
+            }
+          }
+        }
+      },
+      "DependencyCveDto" : {
+        "type" : "object",
+        "required" : [ "cveId", "severity", "defectGroupUuids", "defectGroupPublicIds" ],
+        "properties" : {
+          "cveId" : {
+            "type" : "string"
+          },
+          "severity" : {
+            "type" : "string"
+          },
+          "defectGroupUuids" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "defectGroupPublicIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          }
+        }
+      },
+      "DependencyInfoDto" : {
+        "type" : "object",
+        "required" : [ "purl", "name", "version", "licenses", "maxLicenseRiskScore", "maxLicenseRiskSeverity", "cves", "maxCveSeverity", "packageManager", "scope" ],
+        "properties" : {
+          "purl" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "version" : {
+            "type" : "string"
+          },
+          "licenses" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            },
+            "description" : "License names from the scan's SBOM. Individual license risk scores are not stored."
+          },
+          "maxLicenseRiskScore" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Maximum license risk score stored for this scan, from 0 to 10."
+          },
+          "maxLicenseRiskSeverity" : {
+            "type" : "string"
+          },
+          "cves" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DependencyCveDto"
+            }
+          },
+          "maxCveSeverity" : {
+            "type" : "string"
+          },
+          "packageManager" : {
+            "type" : "string"
+          },
+          "scope" : {
+            "type" : "string"
+          }
+        }
+      },
+      "EngineType" : {
+        "type" : "string",
+        "enum" : [ "UNSPECIFIED", "SECRETS", "SCA", "SAST", "SBOM_SPDX_GEN", "SBOM_CYCLONEDX_GEN", "DAST", "AI_AUDIT" ]
+      },
+      "EngineType1" : {
+        "type" : "string",
+        "enum" : [ "UNSPECIFIED", "SECRETS", "SCA", "SAST", "SBOM_SPDX", "SBOM_CYCLONEDX", "DAST", "AI_AUDIT", "UNRECOGNIZED" ]
+      },
+      "Finding" : {
+        "type" : "object",
+        "properties" : {
+          "uuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "codeBlock" : {
+            "type" : [ "string", "null" ]
+          },
+          "codeBlockHash" : {
+            "type" : [ "string", "null" ]
+          },
+          "fileName" : {
+            "type" : "string"
+          },
+          "startLine" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "endLine" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "startColumn" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "endColumn" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "timeFound" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "properties" : {
+            "type" : [ "object", "null" ],
+            "additionalProperties" : { }
+          },
+          "rule" : {
+            "$ref" : "#/components/schemas/Rule"
+          },
+          "commit" : {
+            "$ref" : "#/components/schemas/Commit"
+          },
+          "defectGroup" : {
+            "$ref" : "#/components/schemas/DefectGroup"
+          },
+          "gitReference" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/GitReference"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "scan" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/Scan"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "codeFlowSteps" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CodeFlowStep"
+            }
+          },
+          "relatedLocations" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RelatedLocation"
+            }
+          },
+          "dastContext" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/DastContext"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "codeFlowHash" : {
+            "type" : [ "string", "null" ]
+          },
+          "filtered" : {
+            "type" : "boolean"
+          },
+          "codeBlockMissing" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "FixRunPullRequest" : {
+        "type" : "object",
+        "required" : [ "pullRequest" ],
+        "properties" : {
+          "pullRequest" : {
+            "type" : "string",
+            "description" : "Public number (or UUID) of the pull request the fix agent opened",
+            "examples" : [ "42" ],
+            "pattern" : "\\S"
+          }
+        }
+      },
+      "FixRunPullRequestResponse" : {
+        "type" : "object",
+        "required" : [ "linkUuid" ],
+        "properties" : {
+          "linkUuid" : {
+            "type" : "string",
+            "description" : "UUID of the SOURCECRAFT_PR link on the defect group; matches Link.uuid in its links"
+          }
+        }
+      },
+      "GitReference" : {
+        "type" : "object",
+        "properties" : {
+          "uuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "type" : {
+            "$ref" : "#/components/schemas/ReferenceType"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "pullRequestId" : {
+            "type" : [ "string", "null" ]
+          },
+          "findings" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Finding"
+            }
+          },
+          "prComments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PrComment"
+            }
+          }
+        }
+      },
+      "LinkToAdd" : {
+        "type" : "object",
+        "required" : [ "type", "identifier" ],
+        "properties" : {
+          "type" : {
+            "$ref" : "#/components/schemas/LinkType",
+            "description" : "Link type. SOURCECRAFT_ISSUE and SOURCECRAFT_PR carry a platform identifier, EXTERNAL_URL and YA_TRACKER carry an HTTPS URL.",
+            "type" : "string",
+            "examples" : [ "SOURCECRAFT_PR" ]
+          },
+          "identifier" : {
+            "type" : "string",
+            "description" : "Platform ID of the issue or pull request (a number or a UUID), or the HTTPS URL for URL-typed links",
+            "examples" : [ "42" ],
+            "pattern" : "\\S"
+          }
+        }
+      },
+      "LinkType" : {
+        "type" : "string",
+        "enum" : [ "EXTERNAL_URL", "SOURCECRAFT_ISSUE", "SOURCECRAFT_PR", "YA_TRACKER" ]
+      },
+      "OperationStatus" : {
+        "type" : "string",
+        "enum" : [ "IN_PROGRESS", "COMPLETED", "FAILED" ]
+      },
+      "PaginatedResponseActivity" : {
+        "type" : "object",
+        "required" : [ "data", "nextPageToken", "totalSize" ],
+        "properties" : {
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Activity"
+            }
+          },
+          "nextPageToken" : {
+            "type" : "string"
+          },
+          "totalSize" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "listRevision" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "PaginatedResponseDefectGroupDto" : {
+        "type" : "object",
+        "required" : [ "data", "nextPageToken", "totalSize" ],
+        "properties" : {
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DefectGroupDto"
+            }
+          },
+          "nextPageToken" : {
+            "type" : "string"
+          },
+          "totalSize" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "listRevision" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "PaginatedResponseDependencyInfoDto" : {
+        "type" : "object",
+        "required" : [ "data", "nextPageToken", "totalSize" ],
+        "properties" : {
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DependencyInfoDto"
+            }
+          },
+          "nextPageToken" : {
+            "type" : "string"
+          },
+          "totalSize" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "listRevision" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "PaginatedResponseFinding" : {
+        "type" : "object",
+        "required" : [ "data", "nextPageToken", "totalSize" ],
+        "properties" : {
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Finding"
+            }
+          },
+          "nextPageToken" : {
+            "type" : "string"
+          },
+          "totalSize" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "listRevision" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "PaginatedResponseRepositoryScanDto" : {
+        "type" : "object",
+        "required" : [ "data", "nextPageToken", "totalSize" ],
+        "properties" : {
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RepositoryScanDto"
+            }
+          },
+          "nextPageToken" : {
+            "type" : "string"
+          },
+          "totalSize" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "listRevision" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "PaginatedResponseScanSummaryDto" : {
+        "type" : "object",
+        "required" : [ "data", "nextPageToken", "totalSize" ],
+        "properties" : {
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ScanSummaryDto"
+            }
+          },
+          "nextPageToken" : {
+            "type" : "string"
+          },
+          "totalSize" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "listRevision" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "PrComment" : {
+        "type" : "object",
+        "properties" : {
+          "uuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "gitReference" : {
+            "$ref" : "#/components/schemas/GitReference"
+          },
+          "externalCommentId" : {
+            "type" : "string"
+          },
+          "defectGroup" : {
+            "$ref" : "#/components/schemas/DefectGroup"
+          },
+          "createdAt" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "fileName" : {
+            "type" : [ "string", "null" ]
+          },
+          "startLine" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "endLine" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          }
+        }
+      },
+      "ReferenceType" : {
+        "type" : "string",
+        "enum" : [ "DEFAULT_BRANCH", "PULL_REQUEST", "TAG", "COMMIT", "CUSTOM" ]
+      },
+      "RelatedLocation" : {
+        "type" : "object",
+        "properties" : {
+          "uuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "finding" : {
+            "$ref" : "#/components/schemas/Finding"
+          },
+          "relatedLocationId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "fileName" : {
+            "type" : "string"
+          },
+          "startLine" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "endLine" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "startColumn" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "endColumn" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "RepoStatus" : {
+        "type" : "string",
+        "enum" : [ "REPO_STATUS_UNSPECIFIED", "REPO_STATUS_NO_RUNS_YET", "REPO_STATUS_RUNNING", "REPO_STATUS_FINISHED", "REPO_STATUS_FAILED", "UNRECOGNIZED" ]
+      },
+      "ReportDto" : {
+        "type" : "object",
+        "required" : [ "reportUuid", "scanUuid", "format", "engineType", "createdAt", "presignedUrl" ],
+        "properties" : {
+          "reportUuid" : {
+            "type" : "string"
+          },
+          "scanUuid" : {
+            "type" : "string"
+          },
+          "format" : {
+            "type" : "string"
+          },
+          "engineType" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "presignedUrl" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ReportOperationDto" : {
+        "type" : "object",
+        "required" : [ "operationUuid", "status", "done", "reportUuid" ],
+        "properties" : {
+          "operationUuid" : {
+            "type" : "string"
+          },
+          "status" : {
+            "$ref" : "#/components/schemas/OperationStatus"
+          },
+          "done" : {
+            "type" : "boolean"
+          },
+          "reportUuid" : {
+            "type" : [ "string", "null" ]
+          },
+          "scanUuid" : {
+            "type" : [ "string", "null" ]
+          },
+          "format" : {
+            "type" : [ "string", "null" ]
+          },
+          "engineType" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ReportUploadForm" : {
+        "description" : "Multipart form for uploading a security analysis report.",
+        "type" : "object",
+        "required" : [ "file", "commit", "engineName", "reportType" ],
+        "properties" : {
+          "file" : {
+            "type" : "string",
+            "format" : "binary",
+            "description" : "Raw report file content, or a ZIP archive with exactly one report file in the archive root. Do not include directories or extra files. The uncompressed ZIP entry must be no larger than 100 MB."
+          },
+          "commit" : {
+            "type" : "string",
+            "description" : "Full SHA commit hash identifying the scanned code revision.",
+            "examples" : [ "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" ]
+          },
+          "engineName" : {
+            "type" : "string",
+            "description" : "Human-readable name of the analysis tool that produced the report.",
+            "examples" : [ "Trivy" ]
+          },
+          "reportType" : {
+            "type" : "string",
+            "description" : "Format of the uploaded report.",
+            "examples" : [ "SARIF" ],
+            "enum" : [ "TEXT", "SARIF", "SBOM", "JSON", "DIR", "AUDIT" ]
+          },
+          "engineType" : {
+            "type" : "string",
+            "description" : "Category of the analysis engine. Defaults to UNSPECIFIED when absent.",
+            "examples" : [ "SCA" ],
+            "enum" : [ "UNSPECIFIED", "SECRETS", "SCA", "SAST", "SA", "SBOM_SPDX", "SBOM_CYCLONEDX" ]
+          },
+          "scanBasePathAbsolute" : {
+            "type" : [ "string", "null" ],
+            "description" : "Absolute path where the scan ran; stripped from report file paths for normalization.",
+            "examples" : [ "/home/user/workspace/my-project" ]
+          },
+          "scanTime" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Unix timestamp (ms) when the scan was initiated.",
+            "examples" : [ 1640995200000 ]
+          },
+          "shouldTriggerEnrichment" : {
+            "type" : "boolean",
+            "description" : "When true, run additional security enrichment (SCA, risk scoring, etc.)."
+          },
+          "isReactive" : {
+            "type" : "boolean",
+            "description" : "When true, respond 202 immediately and process the report in the background; otherwise process synchronously and respond 200 (or 400 on parse errors)."
+          },
+          "scanUuid" : {
+            "type" : [ "string", "null" ],
+            "description" : "Scan UUID. Used as the HMAC payload for SBOM upload tokens."
+          },
+          "expectedReportCount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "Total reports expected for a scan across all uploaders. Sets the total for a new scan or an existing scan whose total is still zero; a nonzero total is preserved. Omit or send zero when unknown (legacy clients).",
+            "examples" : [ 3 ],
+            "minimum" : 0
+          },
+          "prUuid" : {
+            "type" : [ "string", "null" ],
+            "description" : "Pull Request UUID (CI env SOURCECRAFT_PR_UUID)."
+          },
+          "reactive" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "Repository" : {
+        "type" : "object",
+        "properties" : {
+          "uuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "gitRepo" : {
+            "type" : "string"
+          },
+          "organization" : {
+            "type" : "string"
+          },
+          "organizationId" : {
+            "type" : "string"
+          },
+          "organizationSlug" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "lastScanStatus" : {
+            "$ref" : "#/components/schemas/RepoStatus"
+          },
+          "lastScanTime" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "RepositoryScanDto" : {
+        "type" : "object",
+        "required" : [ "gitRepo", "name", "latestScan" ],
+        "properties" : {
+          "gitRepo" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "latestScan" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/ScanSummaryDto"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        }
+      },
+      "RestAppsecSettings" : {
+        "type" : "object",
+        "properties" : {
+          "mergeScaDefectGroupsByPackage" : {
+            "type" : [ "boolean", "null" ],
+            "description" : "When true, new SCA defect groups are merged by package/library name without version. Null in a request means \"leave the current value unchanged\".",
+            "examples" : [ true ]
+          },
+          "dastUrl" : {
+            "type" : [ "string", "null" ],
+            "description" : "Public https URL the Cloud DAST scan targets; must resolve to Yandex Cloud addresses only. Null in a request means \"leave the current value unchanged\", an empty string clears it. Null in a response means not configured.",
+            "examples" : [ "https://example.com" ]
+          }
+        }
+      },
+      "RestRepositoryStatuses" : {
+        "type" : "object",
+        "required" : [ "appsecStatuses", "engineTypeStatuses" ],
+        "properties" : {
+          "appsecStatuses" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/AppsecStatus"
+            },
+            "description" : "Map of status type name (APPSEC, PR_SCAN, UPLOAD, BACKGROUND_SCAN) to status value (ENABLED, DISABLED).",
+            "examples" : [ {
+              "APPSEC" : "ENABLED",
+              "PR_SCAN" : "DISABLED",
+              "UPLOAD" : "ENABLED",
+              "BACKGROUND_SCAN" : "DISABLED"
+            } ]
+          },
+          "engineTypeStatuses" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/AppsecStatus"
+            },
+            "description" : "Map of engine type (SCA, SAST, SECRETS, SBOM_SPDX_GEN, SBOM_CYCLONEDX_GEN) to status value (ENABLED, DISABLED).",
+            "examples" : [ {
+              "SCA" : "DISABLED",
+              "SAST" : "ENABLED",
+              "SECRETS" : "DISABLED",
+              "SBOM_SPDX_GEN" : "ENABLED",
+              "SBOM_CYCLONEDX_GEN" : "DISABLED"
+            } ]
+          },
+          "appsecRepositorySettings" : {
+            "description" : "Effective repository-level feature settings; dastUrl is null when not configured.",
+            "type" : [ "object", "null" ],
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/RestAppsecSettings"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        }
+      },
+      "Rule" : {
+        "type" : "object",
+        "properties" : {
+          "uuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "repository" : {
+            "$ref" : "#/components/schemas/Repository"
+          },
+          "ruleName" : {
+            "type" : "string"
+          },
+          "ruleId" : {
+            "type" : "string"
+          },
+          "engine" : {
+            "type" : "string"
+          },
+          "type" : {
+            "$ref" : "#/components/schemas/EngineType1"
+          },
+          "shortDescription" : {
+            "type" : [ "string", "null" ]
+          },
+          "fullDescription" : {
+            "type" : [ "string", "null" ]
+          },
+          "propertyBag" : {
+            "type" : [ "object", "null" ],
+            "additionalProperties" : { }
+          },
+          "helpUri" : {
+            "type" : [ "string", "null" ]
+          },
+          "helpText" : {
+            "type" : [ "string", "null" ]
+          },
+          "severity" : {
+            "$ref" : "#/components/schemas/Severity"
+          },
+          "cvssScore" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "cwes" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "ScaScanResponse" : {
+        "type" : "object",
+        "required" : [ "scanUuid", "fluxId", "status" ],
+        "properties" : {
+          "scanUuid" : {
+            "type" : "string",
+            "description" : "UUID of the new scan that will receive the SCA results"
+          },
+          "fluxId" : {
+            "type" : "string",
+            "description" : "ID of the CI run started for this scan"
+          },
+          "status" : {
+            "type" : "string",
+            "description" : "The scan is running; results will arrive later",
+            "enum" : [ "INITIATED" ]
+          }
+        }
+      },
+      "Scan" : {
+        "type" : "object",
+        "properties" : {
+          "uuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "status" : {
+            "$ref" : "#/components/schemas/ScanStatus"
+          },
+          "type" : {
+            "$ref" : "#/components/schemas/ScanType"
+          },
+          "origin" : {
+            "$ref" : "#/components/schemas/ScanOrigin"
+          },
+          "timeStarted" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "timeFinished" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "expectedReportCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "receivedReportCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "externalUuid" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/UUID"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "fluxId" : {
+            "type" : [ "string", "null" ]
+          },
+          "fluxPublicId" : {
+            "type" : "string"
+          },
+          "newDelta" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "closedDelta" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "totalDefectGroups" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "foundDefectGroups" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "openDefectGroups" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "repository" : {
+            "$ref" : "#/components/schemas/Repository"
+          },
+          "commit" : {
+            "$ref" : "#/components/schemas/Commit"
+          },
+          "gitReference" : {
+            "anyOf" : [ {
+              "$ref" : "#/components/schemas/GitReference"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "findings" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Finding"
+            }
+          },
+          "artifacts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Artifact"
+            }
+          },
+          "dependencies" : {
+            "type" : "array",
+            "uniqueItems" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/Dependency"
+            }
+          }
+        }
+      },
+      "ScanDetailsDto" : {
+        "type" : "object",
+        "required" : [ "uuid", "status", "gitRepo", "commitHash", "commitId", "commitUuid", "timeStarted", "timeFinished", "gitReferenceId", "gitReferenceUuid", "gitReferenceName", "isLatest", "expectedReportCount", "receivedReportCount", "origin" ],
+        "properties" : {
+          "uuid" : {
+            "type" : "string"
+          },
+          "status" : {
+            "$ref" : "#/components/schemas/ScanStatus"
+          },
+          "gitRepo" : {
+            "type" : "string"
+          },
+          "commitHash" : {
+            "type" : "string"
+          },
+          "commitId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "commitUuid" : {
+            "type" : "string"
+          },
+          "timeStarted" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "timeFinished" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "gitReferenceId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "gitReferenceUuid" : {
+            "type" : [ "string", "null" ]
+          },
+          "gitReferenceName" : {
+            "type" : [ "string", "null" ]
+          },
+          "isLatest" : {
+            "type" : "boolean"
+          },
+          "totalFindings" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "criticalCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "highCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "mediumCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "lowCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "defectGroupsCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "rulesCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "newDelta" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "closedDelta" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "totalDefectGroups" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "foundDefectGroups" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "openDefectGroups" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "expectedReportCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "receivedReportCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "origin" : {
+            "$ref" : "#/components/schemas/ScanOrigin"
+          }
+        }
+      },
+      "ScanOrigin" : {
+        "type" : "string",
+        "enum" : [ "UNKNOWN", "CUSTOM", "BUILT_IN", "UNRECOGNIZED" ]
+      },
+      "ScanStatus" : {
+        "type" : "string",
+        "enum" : [ "INITIATED", "FINISHED", "FAILED" ]
+      },
+      "ScanStatus1" : {
+        "type" : "string",
+        "enum" : [ "SCAN_STATUS_UNSPECIFIED", "NO_RUNS_YET", "RUNNING", "FINISHED", "FAILED", "UNRECOGNIZED" ]
+      },
+      "ScanSummaryDto" : {
+        "type" : "object",
+        "required" : [ "id", "uuid", "status", "commitHash", "timeStarted", "timeFinished", "isLatest", "gitReferenceName", "pullRequestId", "scanType", "expectedReportCount", "receivedReportCount", "origin" ],
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "uuid" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "commitHash" : {
+            "type" : "string"
+          },
+          "timeStarted" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "timeFinished" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "isLatest" : {
+            "type" : "boolean"
+          },
+          "gitReferenceName" : {
+            "type" : [ "string", "null" ]
+          },
+          "pullRequestId" : {
+            "type" : [ "string", "null" ]
+          },
+          "newDelta" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "closedDelta" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "totalDefectGroups" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "foundDefectGroups" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "openDefectGroups" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "scanType" : {
+            "type" : "string"
+          },
+          "expectedReportCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "receivedReportCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "origin" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ScanType" : {
+        "type" : "string",
+        "enum" : [ "SCAN_TYPE_DEFAULT", "SCAN_TYPE_AUDIT", "SCAN_TYPE_CLOUD_DAST", "UNRECOGNIZED" ]
+      },
+      "Severity" : {
+        "type" : "string",
+        "enum" : [ "NONE", "LOW", "MEDIUM", "HIGH", "CRITICAL", "UNRECOGNIZED" ]
+      },
+      "TagDto" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          }
+        }
+      },
+      "UUID" : {
+        "type" : "string",
+        "format" : "uuid",
+        "pattern" : "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+      },
+      "UpdateCommentRequest" : {
+        "type" : "object",
+        "required" : [ "content" ],
+        "properties" : {
+          "content" : {
+            "type" : "string",
+            "description" : "New comment content (max 1023 characters)",
+            "examples" : [ "This looks like a false positive" ],
+            "pattern" : "\\S",
+            "maxLength" : 1023
+          }
+        }
+      }
+    }
+  },
+  "paths" : {
+    "/v1/activities" : {
+      "get" : {
+        "parameters" : [ {
+          "description" : "Public id (#N) of the defect group to list activities for",
+          "example" : 42,
+          "required" : true,
+          "name" : "defectGroupPublicId",
+          "in" : "query",
+          "schema" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          }
+        }, {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "Page size, from 1 to 250. Default: 50.",
+          "example" : 50,
+          "name" : "pageSize",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 250,
+            "minimum" : 1,
+            "default" : 50
+          },
+          "required" : true
+        }, {
+          "description" : "Omit for the first page. Use nextPageToken from the response for subsequent pages, keeping all other parameters unchanged. An empty nextPageToken means the last page.",
+          "name" : "pageToken",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaginatedResponseActivity"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List Activities",
+        "tags" : [ "Activities Rest Api" ]
+      }
+    },
+    "/v1/activities/comment" : {
+      "post" : {
+        "parameters" : [ {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateCommentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Activity"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Create Comment",
+        "tags" : [ "Activities Rest Api" ]
+      }
+    },
+    "/v1/activities/comment/{activityUuid}" : {
+      "patch" : {
+        "parameters" : [ {
+          "description" : "UUID of the comment activity to update",
+          "example" : "01890f3e-7b5c-7cc2-bc6f-3f5d8c9a1e4a",
+          "required" : true,
+          "name" : "activityUuid",
+          "in" : "path",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateCommentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Activity"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Update Comment",
+        "tags" : [ "Activities Rest Api" ]
+      },
+      "delete" : {
+        "parameters" : [ {
+          "description" : "UUID of the comment activity to delete",
+          "example" : "01890f3e-7b5c-7cc2-bc6f-3f5d8c9a1e4a",
+          "required" : true,
+          "name" : "activityUuid",
+          "in" : "path",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "summary" : "Delete Comment",
+        "tags" : [ "Activities Rest Api" ]
+      }
+    },
+    "/v1/activities/{activityUuid}" : {
+      "get" : {
+        "parameters" : [ {
+          "description" : "Activity UUID to retrieve",
+          "example" : "01890f3e-7b5c-7cc2-bc6f-3f5d8c9a1e4a",
+          "required" : true,
+          "name" : "activityUuid",
+          "in" : "path",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Activity"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Activity By Uuid",
+        "tags" : [ "Activities Rest Api" ]
+      }
+    },
+    "/v1/admin/repository-statuses" : {
+      "get" : {
+        "parameters" : [ {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestRepositoryStatuses"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Repository Statuses",
+        "tags" : [ "Admin Common Rest Api" ]
+      },
+      "post" : {
+        "parameters" : [ {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangeRepositoryStatusesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestRepositoryStatuses"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Change Repository Statuses",
+        "tags" : [ "Admin Common Rest Api" ]
+      }
+    },
+    "/v1/ai/fix-runs/{runUuid}/pull-request" : {
+      "post" : {
+        "parameters" : [ {
+          "description" : "UUID of the fix run, as given to the agent with its task",
+          "required" : true,
+          "name" : "runUuid",
+          "in" : "path",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/FixRunPullRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FixRunPullRequestResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Report Pull Request",
+        "tags" : [ "Ai Fix Run Rest Api" ]
+      }
+    },
+    "/v1/defect-groups" : {
+      "get" : {
+        "parameters" : [ {
+          "description" : "Case-insensitive substring of the rule's full description (the vulnerability description for SCA). If empty/omitted: all rules.",
+          "example" : "kvm",
+          "name" : "description",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        }, {
+          "description" : "Case-insensitive substring of the file path. If empty/omitted: all files.",
+          "example" : "src/",
+          "name" : "file",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        }, {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "Page size, from 1 to 250. Default: 50.",
+          "example" : 50,
+          "name" : "pageSize",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 250,
+            "minimum" : 1,
+            "default" : 50
+          },
+          "required" : true
+        }, {
+          "description" : "Omit for the first page. Use nextPageToken from the response for subsequent pages, keeping all other parameters unchanged. An empty nextPageToken means the last page.",
+          "name" : "pageToken",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        }, {
+          "description" : "Case-insensitive substring of the rule name. If empty/omitted: all rules.",
+          "example" : "CVE-2025",
+          "name" : "rule",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        }, {
+          "description" : "Scan kind to pivot on: SCAN_TYPE_DEFAULT (the repository's latest CI scan) or SCAN_TYPE_AUDIT (its latest audit scan). If empty/omitted: SCAN_TYPE_DEFAULT. Ignored when scanUuid is provided.",
+          "example" : "SCAN_TYPE_AUDIT",
+          "name" : "scanType",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        }, {
+          "description" : "Scan UUID to select. Omit or leave blank to use the repository's latest scan. Scan UUIDs can be obtained from the scan listing endpoints.",
+          "example" : "01890f3e-7b5c-7cc2-bc6f-3f5d8c9a1e4a",
+          "name" : "scanUuid",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        }, {
+          "description" : "Severities to keep: NONE, LOW, MEDIUM, HIGH, CRITICAL. Repeat the key for several: severity=HIGH&severity=CRITICAL. If empty/omitted: returns defect groups of all severities.",
+          "example" : "HIGH",
+          "name" : "severity",
+          "in" : "query",
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "required" : true
+        }, {
+          "description" : "Defect group statuses to keep, one of the DefectGroupStatus enum names. Repeat the key for several: status=OPEN&status=TRIAGED_TP. If empty/omitted: returns defect groups of all statuses.",
+          "example" : "OPEN",
+          "name" : "status",
+          "in" : "query",
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "required" : true
+        }, {
+          "description" : "Security engine type to filter defect groups: SECRETS, SCA, SAST, SBOM_SPDX, SBOM_CYCLONEDX, DAST, AI_AUDIT. If empty/omitted: returns defect groups of all types.",
+          "example" : "SECRETS",
+          "name" : "type",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaginatedResponseDefectGroupDto"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List Defect Groups",
+        "tags" : [ "Defect Group Rest Api" ]
+      }
+    },
+    "/v1/defect-groups/by-link" : {
+      "get" : {
+        "parameters" : [ {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "Identifier of the link as it is stored: a platform ID for SOURCECRAFT_ISSUE and SOURCECRAFT_PR, an HTTPS URL for the other types",
+          "example" : "281474976710700",
+          "required" : true,
+          "name" : "identifier",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "Link type to search by: EXTERNAL_URL, SOURCECRAFT_ISSUE, SOURCECRAFT_PR or YA_TRACKER",
+          "example" : "SOURCECRAFT_PR",
+          "required" : true,
+          "name" : "linkType",
+          "in" : "query",
+          "schema" : {
+            "$ref" : "#/components/schemas/LinkType"
+          }
+        }, {
+          "description" : "Page size, from 1 to 250. Default: 50.",
+          "example" : 50,
+          "name" : "pageSize",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 250,
+            "minimum" : 1,
+            "default" : 50
+          },
+          "required" : true
+        }, {
+          "description" : "Omit for the first page. Use nextPageToken from the response for subsequent pages, keeping all other parameters unchanged. An empty nextPageToken means the last page.",
+          "name" : "pageToken",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaginatedResponseDefectGroupDto"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List Defect Groups By Link",
+        "tags" : [ "Defect Group Rest Api" ]
+      }
+    },
+    "/v1/defect-groups/links/batch" : {
+      "post" : {
+        "parameters" : [ {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BatchDefectGroupsLinksRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BatchDefectGroupsLinksResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Add Batch Defect Groups Links",
+        "tags" : [ "Defect Group Link Rest Api" ]
+      }
+    },
+    "/v1/defect-groups/status/batch" : {
+      "post" : {
+        "parameters" : [ {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BatchDefectGroupsStatusRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BatchDefectGroupsStatusResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Set Batch Defect Groups Status",
+        "tags" : [ "Defect Group Status Rest Api" ]
+      }
+    },
+    "/v1/defect-groups/ticket-url/batch" : {
+      "post" : {
+        "parameters" : [ {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BatchDefectGroupsTicketUrlRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request"
+          }
+        },
+        "summary" : "Set Batch Defect Groups Ticket Url",
+        "tags" : [ "Defect Group Ticket Url Rest Api" ]
+      }
+    },
+    "/v1/defect-groups/types" : {
+      "get" : {
+        "parameters" : [ {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List Engine Types",
+        "tags" : [ "Defect Group Rest Api" ]
+      }
+    },
+    "/v1/defect-groups/{publicId}" : {
+      "get" : {
+        "parameters" : [ {
+          "description" : "Per-repository public id of the defect group",
+          "example" : 42,
+          "required" : true,
+          "name" : "publicId",
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DefectGroupDto"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Defect Group By Public Id",
+        "tags" : [ "Defect Group Rest Api" ]
+      }
+    },
+    "/v1/defect-groups/{publicId}/allowed-transitions" : {
+      "get" : {
+        "parameters" : [ {
+          "description" : "Per-repository public id of the defect group",
+          "example" : 42,
+          "required" : true,
+          "name" : "publicId",
+          "in" : "path",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AllowedTransitionsResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Allowed Transitions",
+        "tags" : [ "Defect Group Rest Api" ]
+      }
+    },
+    "/v1/dependencies" : {
+      "get" : {
+        "summary" : "List repository libraries with license risks and CVEs",
+        "parameters" : [ {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "Minimum CVE severity: NONE, LOW, MEDIUM, HIGH, CRITICAL. Inclusive.",
+          "name" : "minCveSeverity",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        }, {
+          "description" : "Minimum maximum license risk score, inclusive (0–10).",
+          "name" : "minLicenseRiskScore",
+          "in" : "query",
+          "schema" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "maximum" : 10,
+            "minimum" : 0
+          },
+          "required" : true
+        }, {
+          "description" : "Minimum license risk severity: NONE, LOW, MEDIUM, HIGH, CRITICAL. Inclusive.",
+          "name" : "minLicenseRiskSeverity",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        }, {
+          "description" : "Page size, from 1 to 250. Default: 50.",
+          "example" : 50,
+          "name" : "pageSize",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 250,
+            "minimum" : 1,
+            "default" : 50
+          },
+          "required" : true
+        }, {
+          "description" : "Omit for the first page. Use nextPageToken from the response for subsequent pages, keeping all other parameters unchanged. An empty nextPageToken means the last page.",
+          "name" : "pageToken",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        }, {
+          "description" : "Case-insensitive PURL substring. Omit or leave blank for all libraries.",
+          "name" : "purl",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        }, {
+          "description" : "Scan UUID to select. Omit or leave blank to use the repository's latest scan. Scan UUIDs can be obtained from the scan listing endpoints.",
+          "example" : "01890f3e-7b5c-7cc2-bc6f-3f5d8c9a1e4a",
+          "name" : "scanUuid",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaginatedResponseDependencyInfoDto"
+                }
+              }
+            }
+          }
+        },
+        "tags" : [ "Dependency Rest Api" ]
+      }
+    },
+    "/v1/findings" : {
+      "get" : {
+        "parameters" : [ {
+          "deprecated" : true,
+          "description" : "Internal numeric ID of the defect group (Long, not UUID). Deprecated: use defectGroupUuid instead.",
+          "example" : 12345,
+          "required" : false,
+          "name" : "defectGroupId",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "default" : 0
+          }
+        }, {
+          "description" : "UUID of the defect group. Takes priority over defectGroupId when both are provided.",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : false,
+          "name" : "defectGroupUuid",
+          "in" : "query",
+          "schema" : {
+            "type" : [ "string", "null" ]
+          }
+        }, {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "Page size, from 1 to 250. Default: 50.",
+          "example" : 50,
+          "name" : "pageSize",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 250,
+            "minimum" : 1,
+            "default" : 50
+          },
+          "required" : true
+        }, {
+          "description" : "Omit for the first page. Use nextPageToken from the response for subsequent pages, keeping all other parameters unchanged. An empty nextPageToken means the last page.",
+          "name" : "pageToken",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaginatedResponseFinding"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List Findings",
+        "tags" : [ "Findings Rest Api" ]
+      }
+    },
+    "/v1/reports/generate" : {
+      "post" : {
+        "summary" : "Start generating a PDF or SARIF report",
+        "description" : "Starts asynchronous report generation for a repository scan (the latest scan when `scanUuid` is omitted). `format` selects PDF (default) or SARIF; for SARIF, `engineType` selects the combined report (UNSPECIFIED, default) or a single engine (SECRETS/SCA/SAST/DAST). Returns a long-running operation to poll via `GET /v1/reports/operations/{operationUuid}`. If a report already exists for the slice, a completed operation referencing it is returned without regeneration; if generation is already running, the in-flight operation is returned.",
+        "tags" : [ "Reports" ],
+        "parameters" : [ {
+          "description" : "For SARIF: engine slice to generate — UNSPECIFIED (default) for the combined report, or SECRETS/SCA/SAST/DAST for a per-engine report. Ignored for PDF.",
+          "name" : "engineType",
+          "in" : "query",
+          "schema" : {
+            "type" : [ "string", "null" ]
+          },
+          "required" : true
+        }, {
+          "description" : "Report format: PDF (default) or SARIF.",
+          "name" : "format",
+          "in" : "query",
+          "schema" : {
+            "type" : [ "string", "null" ]
+          },
+          "required" : true
+        }, {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "UUID of the scan to generate the report for; if omitted, the latest scan is used.",
+          "example" : "01890f3e-7b5c-7cc2-bc6f-3f5d8c9a1e4a",
+          "name" : "scanUuid",
+          "in" : "query",
+          "schema" : {
+            "type" : [ "string", "null" ]
+          },
+          "required" : true
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReportOperationDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reports/operations/{operationUuid}" : {
+      "get" : {
+        "summary" : "Get the status of a report-generation operation",
+        "description" : "Polls a report-generation operation started by `POST /v1/reports/generate`. Once `done` is true with status COMPLETED, download the report via `GET /v1/reports/presigned-url`.",
+        "tags" : [ "Reports" ],
+        "parameters" : [ {
+          "description" : "UUID of the report-generation operation",
+          "required" : true,
+          "name" : "operationUuid",
+          "in" : "path",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReportOperationDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reports/presigned-url" : {
+      "get" : {
+        "summary" : "Get a fresh presigned S3 URL to download a report",
+        "description" : "Resolves the report by `reportUuid`, or by `scanUuid`, or the latest report of the repository when neither is given, and returns its metadata with a fresh presigned S3 download URL. For scan/latest lookups, `format` (PDF default) and, for SARIF, `engineType` (UNSPECIFIED = combined) select the slice; a `reportUuid` already pins it.",
+        "tags" : [ "Reports" ],
+        "parameters" : [ {
+          "description" : "For SARIF scan/latest lookups: engine slice — UNSPECIFIED (default) for the combined report, or SECRETS/SCA/SAST/DAST for a per-engine report.",
+          "name" : "engineType",
+          "in" : "query",
+          "schema" : {
+            "type" : [ "string", "null" ]
+          },
+          "required" : true
+        }, {
+          "description" : "Report format to download for scan/latest lookups: PDF (default) or SARIF.",
+          "name" : "format",
+          "in" : "query",
+          "schema" : {
+            "type" : [ "string", "null" ]
+          },
+          "required" : true
+        }, {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "UUID of the report to download",
+          "name" : "reportUuid",
+          "in" : "query",
+          "schema" : {
+            "type" : [ "string", "null" ]
+          },
+          "required" : true
+        }, {
+          "description" : "UUID of the scan whose report to download",
+          "example" : "01890f3e-7b5c-7cc2-bc6f-3f5d8c9a1e4a",
+          "name" : "scanUuid",
+          "in" : "query",
+          "schema" : {
+            "type" : [ "string", "null" ]
+          },
+          "required" : true
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReportDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reports/upload" : {
+      "post" : {
+        "summary" : "Upload a security analysis report",
+        "description" : "Accepts a SARIF/SBOM/TEXT/AUDIT report as multipart/form-data and processes it for the given repository.\n\nThe `file` part can be either a raw report file or a ZIP archive.\n\nZIP archive requirements:\n- exactly one report file;\n- the report file must be in the archive root;\n- directories, nested paths, and extra files are rejected;\n- the single uncompressed entry must be no larger than 100 MB.\n\nThe file content must match `reportType`: SARIF uploads should contain a SARIF report, and SBOM uploads should contain SPDX or CycloneDX JSON. The REST request body is limited to 100 MB.\n\nCreate archives without parent directories: `zip report.zip report.sarif`. Do not zip a folder with `zip -r report.zip reports/`, because nested paths are rejected.\n\nSet `isReactive=true` to process in the background — note that it answers 202 before parsing, so a report rejected later is reported only in the logs. Keep the default `isReactive=false` to get 400 with the reason the report was rejected, which is what an AUDIT upload needs: its message names every result and field to fix before uploading the corrected report again.",
+        "tags" : [ "Report Upload" ],
+        "parameters" : [ {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReportUploadForm"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Report processed successfully (synchronous mode)",
+            "content" : {
+              "application/json" : {
+                "schema" : { }
+              }
+            }
+          },
+          "202" : {
+            "description" : "Report accepted for background processing (isReactive=true)"
+          },
+          "400" : {
+            "description" : "Invalid request: missing/invalid fields or unparseable report"
+          },
+          "401" : {
+            "description" : "Missing or invalid authorization token"
+          },
+          "403" : {
+            "description" : "Permission denied or security disabled for the repository"
+          },
+          "404" : {
+            "description" : "Repository not found"
+          }
+        }
+      }
+    },
+    "/v1/repositories" : {
+      "get" : {
+        "summary" : "List organization repositories with their latest successful default-branch scan",
+        "parameters" : [ {
+          "description" : "Organization ID. Lists repositories known to AppSec and readable by the caller.",
+          "required" : true,
+          "name" : "orgId",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "Page size, from 1 to 250. Default: 50.",
+          "name" : "pageSize",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 250,
+            "minimum" : 1,
+            "default" : 50
+          },
+          "required" : true
+        }, {
+          "description" : "Omit for the first page. Use nextPageToken from the response for subsequent pages, keeping all other parameters unchanged. An empty nextPageToken means the last page.",
+          "name" : "pageToken",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        }, {
+          "description" : "Sort field: timeFinished (default), name or gitRepo. Missing scan times sort last.",
+          "name" : "sortBy",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : "timeFinished"
+          },
+          "required" : true
+        }, {
+          "description" : "Sort direction: ASC or DESC (default). Repository ID breaks ties.",
+          "name" : "sortOrder",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : "DESC"
+          },
+          "required" : true
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaginatedResponseRepositoryScanDto"
+                }
+              }
+            }
+          }
+        },
+        "tags" : [ "Repository Rest Api" ]
+      }
+    },
+    "/v1/scans" : {
+      "get" : {
+        "parameters" : [ {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "Page size, from 1 to 250. Default: 50.",
+          "example" : 50,
+          "name" : "pageSize",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 250,
+            "minimum" : 1,
+            "default" : 50
+          },
+          "required" : true
+        }, {
+          "description" : "Omit for the first page. Use nextPageToken from the response for subsequent pages, keeping all other parameters unchanged. An empty nextPageToken means the last page.",
+          "name" : "pageToken",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "schema" : {
+            "allOf" : [ {
+              "$ref" : "#/components/schemas/ScanStatus1"
+            }, {
+              "default" : "FINISHED"
+            } ]
+          },
+          "required" : true
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaginatedResponseScanSummaryDto"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "List Scans",
+        "tags" : [ "Scan Rest Api" ]
+      }
+    },
+    "/v1/scans/latest" : {
+      "get" : {
+        "parameters" : [ {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ScanSummaryDto"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Latest Scan",
+        "tags" : [ "Scan Rest Api" ]
+      }
+    },
+    "/v1/scans/sca" : {
+      "post" : {
+        "summary" : "Start an SCA rescan from the latest saved SBOM",
+        "description" : "Uses the newest default-branch scan with a saved SBOM, even if a newer scan has only other reports. Runs SCA in CI using that SBOM and its commit, and saves results in a new scan. No request body is needed. Returns after CI accepts the run; results will arrive later.",
+        "tags" : [ "SCA Rescans" ],
+        "parameters" : [ {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "responses" : {
+          "202" : {
+            "description" : "CI accepted the SCA rescan",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ScaScanResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Missing or blank gitRepo"
+          },
+          "401" : {
+            "description" : "Missing or invalid authorization header"
+          },
+          "403" : {
+            "description" : "Permission denied or SCA scanning is disabled"
+          },
+          "404" : {
+            "description" : "Repository or saved default-branch SBOM not found"
+          },
+          "409" : {
+            "description" : "The source scan is still running"
+          },
+          "500" : {
+            "description" : "Failed to prepare the SCA rescan"
+          },
+          "502" : {
+            "description" : "CI could not start SBOM enrichment"
+          },
+          "503" : {
+            "description" : "No SCA engines are configured"
+          }
+        }
+      }
+    },
+    "/v1/scans/{scanUuid}" : {
+      "get" : {
+        "parameters" : [ {
+          "description" : "Scan UUID to retrieve",
+          "example" : "01890f3e-7b5c-7cc2-bc6f-3f5d8c9a1e4a",
+          "required" : true,
+          "name" : "scanUuid",
+          "in" : "path",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ScanDetailsDto"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Scan By Uuid",
+        "tags" : [ "Scan Rest Api" ]
+      }
+    }
+  },
+  "tags" : [ {
+    "name" : "Report Upload",
+    "description" : "Upload security analysis reports (SARIF/SBOM/TEXT/AUDIT) for a repository."
+  }, {
+    "name" : "Reports",
+    "description" : "Generate and download AppSec PDF/SARIF reports for a repository."
+  }, {
+    "name" : "SCA Rescans",
+    "description" : "Start SCA rescans for repositories using the latest saved SBOM from the default branch."
+  } ],
+  "info" : {
+    "title" : "AppSec Backend API",
+    "version" : "1.0.0",
+    "description" : "SourceCraft Appsec REST API",
+    "contact" : {
+      "name" : "@akuleshov7"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "contracts": [
+    {
+      "name": "platform",
+      "snapshot": "sourcecraft.swagger.json",
+      "url": "https://api.sourcecraft.tech/sourcecraft.swagger.json"
+    },
+    {
+      "name": "appsec",
+      "snapshot": "appsec.openapi.json",
+      "url": "https://appsec.sourcecraft.tech/openapi"
+    }
+  ]
+}
