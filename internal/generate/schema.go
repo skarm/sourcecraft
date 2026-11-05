@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"encoding/json"
+	"strings"
+)
 
 type schema struct {
 	Ref                  string             `json:"$ref"`
@@ -13,6 +16,9 @@ type schema struct {
 	AdditionalProperties *schema            `json:"additionalProperties"`
 	Enum                 []string           `json:"enum"`
 	Required             []string           `json:"required"`
+	AllOf                []json.RawMessage  `json:"allOf"`
+	AnyOf                []json.RawMessage  `json:"anyOf"`
+	OneOf                []json.RawMessage  `json:"oneOf"`
 }
 
 type parameter struct {
@@ -63,6 +69,8 @@ func (g *generator) markInput(s *schema) {
 		return
 	}
 
+	rejectPlatformComposition(s)
+
 	if s.Ref != "" {
 		name := refName(s.Ref)
 		if g.inputs[name] {
@@ -98,6 +106,8 @@ func (g *generator) projectedType(s *schema, input bool) string {
 	if s == nil {
 		panic("missing type schema")
 	}
+
+	rejectPlatformComposition(s)
 
 	if s.Ref != "" {
 		g.resolve(s)
@@ -145,12 +155,15 @@ func (g *generator) projectedType(s *schema, input bool) string {
 
 		return typeFloat64
 	case typeArray:
+		g.rejectQuotedInteger(s.Items)
 		return "[]" + g.projectedType(s.Items, input)
 	case typeObject:
 		if s.AdditionalProperties != nil {
 			if len(s.Properties) != 0 {
 				panic("mixed object properties and dictionary entries are unsupported")
 			}
+
+			g.rejectQuotedInteger(s.AdditionalProperties)
 
 			return "map[string]" + g.projectedType(s.AdditionalProperties, input)
 		}
@@ -189,6 +202,8 @@ func (g *generator) resolve(s *schema) *schema {
 		panic("missing schema")
 	}
 
+	rejectPlatformComposition(s)
+
 	if s.Ref == "" {
 		return s
 	}
@@ -197,6 +212,8 @@ func (g *generator) resolve(s *schema) *schema {
 	if definition == nil {
 		panic("missing definition: " + s.Ref)
 	}
+
+	rejectPlatformComposition(definition)
 
 	return definition
 }
@@ -208,4 +225,19 @@ func refName(ref string) string {
 	}
 
 	return strings.TrimPrefix(ref, prefix)
+}
+
+// String-encoded integers rely on encoding/json's ",string" struct-field tag.
+// A scalar body, response, array item or dictionary value has no such tag.
+func (g *generator) rejectQuotedInteger(s *schema) {
+	resolved := g.resolve(s)
+	if resolved.Type == typeString && (resolved.Format == typeInt64 || resolved.Format == typeUint64) {
+		panic("string-encoded integers require numeric model fields")
+	}
+}
+
+func rejectPlatformComposition(s *schema) {
+	if len(s.AllOf) != 0 || len(s.AnyOf) != 0 || len(s.OneOf) != 0 {
+		panic("Swagger schema composition is unsupported")
+	}
 }

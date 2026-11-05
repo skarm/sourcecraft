@@ -145,3 +145,187 @@ func smallSpec(kind string) specification {
 	spec.Paths["/things/{thing_id}"] = map[string]operation{method: op}
 	return spec
 }
+
+func TestPlatformRejectsQuotedIntegersOutsideModelFields(t *testing.T) {
+	for _, format := range []string{"int64", "uint64"} {
+		for _, location := range []string{"response", "body", "array", "dictionary", "nested_array", "nested_dictionary"} {
+			t.Run(format+"/"+location, func(t *testing.T) {
+				spec := smallSpec("post_query")
+				quoted := &schema{Type: "string", Format: format}
+				op := spec.Paths["/things/{thing_id}"]["post"]
+				switch location {
+				case "response":
+					r := op.Responses["200"]
+					r.Schema = quoted
+					op.Responses["200"] = r
+				case "body":
+					op.Parameters[1].Schema = quoted
+				case "array":
+					spec.Definitions["Thing"].Properties["values"] = &schema{Type: "array", Items: quoted}
+				case "dictionary":
+					spec.Definitions["Thing"].Properties["values"] = &schema{Type: "object", AdditionalProperties: quoted}
+				case "nested_array":
+					spec.Definitions["Thing"].Properties["values"] = &schema{Type: "array", Items: &schema{Type: "array", Items: quoted}}
+				case "nested_dictionary":
+					spec.Definitions["Thing"].Properties["values"] = &schema{Type: "array", Items: &schema{Type: "object", AdditionalProperties: quoted}}
+				}
+				spec.Paths["/things/{thing_id}"]["post"] = op
+				data, err := json.Marshal(spec)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if outputs, err := generate(data); err == nil || outputs != nil || !strings.Contains(err.Error(), "string-encoded integers") {
+					t.Fatalf("unsupported wire type was accepted: outputs=%d error=%v", len(outputs), err)
+				}
+			})
+		}
+	}
+}
+
+func TestPlatformQuotedIntegerFieldsRemainSupported(t *testing.T) {
+	spec := smallSpec("get")
+	spec.Definitions["Thing"].Required = []string{"id", "signed"}
+	spec.Definitions["Thing"].Properties["signed"] = &schema{Type: "string", Format: "int64"}
+	spec.Definitions["Thing"].Properties["unsigned"] = &schema{Type: "string", Format: "uint64"}
+	spec.Definitions["Holder"] = &schema{Type: "object", Properties: map[string]*schema{
+		"thing": {Ref: "#/definitions/Thing"},
+		"list":  {Type: "array", Items: &schema{Ref: "#/definitions/Thing"}},
+		"by_id": {Type: "object", AdditionalProperties: &schema{Ref: "#/definitions/Thing"}},
+	}}
+	testGeneratedPackage(t, generateSpec(t, spec), `package sourcecraft
+import ("encoding/json";"testing")
+func TestWire(t *testing.T) {
+ const wire = "{\"id\":\"x\",\"signed\":\"-9223372036854775808\",\"unsigned\":\"18446744073709551615\"}"
+ var model Thing
+ if err := json.Unmarshal([]byte(wire), &model); err != nil { t.Fatal(err) }
+ if model.Signed != -9223372036854775808 || model.Unsigned != ^uint64(0) { t.Fatalf("lost precision: %#v",model) }
+ data,err := json.Marshal(model)
+ if err != nil || string(data) != wire { t.Fatalf("round trip: %s %v",data,err) }
+}
+`)
+}
+
+func TestPlatformRejectsSchemaComposition(t *testing.T) {
+	for _, composition := range []string{"allOf", "anyOf", "oneOf"} {
+		for _, location := range []string{"model", "field", "reference", "array", "dictionary", "response", "body", "multipart", "multipart_field"} {
+			t.Run(composition+"/"+location, func(t *testing.T) {
+				spec := smallSpec("post_query")
+				composed := &schema{Type: "object"}
+				branches := []json.RawMessage{json.RawMessage(`{"$ref":"#/definitions/Thing"}`)}
+				switch composition {
+				case "allOf":
+					composed.AllOf = branches
+				case "anyOf":
+					composed.AnyOf = branches
+				case "oneOf":
+					composed.OneOf = branches
+				}
+				op := spec.Paths["/things/{thing_id}"]["post"]
+				switch location {
+				case "model":
+					spec.Definitions["Extended"] = composed
+				case "field":
+					spec.Definitions["CreateThingBody"].Properties["extra"] = composed
+				case "reference":
+					composed.Ref = "#/definitions/Thing"
+					spec.Definitions["CreateThingBody"].Properties["extra"] = composed
+				case "array":
+					spec.Definitions["CreateThingBody"].Properties["extra"] = &schema{Type: "array", Items: composed}
+				case "dictionary":
+					spec.Definitions["CreateThingBody"].Properties["extra"] = &schema{Type: "object", AdditionalProperties: composed}
+				case "response":
+					r := op.Responses["200"]
+					r.Schema = composed
+					op.Responses["200"] = r
+				case "body":
+					op.Parameters[1].Schema = composed
+				case "multipart", "multipart_field":
+					spec = smallSpec("multipart")
+					op = spec.Paths["/things/{thing_id}"]["post"]
+					if location == "multipart" {
+						composed.Properties = op.RequestBody.Content["multipart/form-data"].Schema.Properties
+						content := op.RequestBody.Content["multipart/form-data"]
+						content.Schema = composed
+						op.RequestBody.Content["multipart/form-data"] = content
+					} else {
+						composed.Type = "string"
+						op.RequestBody.Content["multipart/form-data"].Schema.Properties["file"] = composed
+					}
+				}
+				spec.Paths["/things/{thing_id}"]["post"] = op
+				data, err := json.Marshal(spec)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if outputs, err := generate(data); err == nil || outputs != nil || !strings.Contains(err.Error(), "composition") {
+					t.Fatalf("composition was silently flattened: outputs=%d error=%v", len(outputs), err)
+				}
+			})
+		}
+	}
+}
+
+func TestPlatformRequiredStringIntegerQueriesCompile(t *testing.T) {
+	for _, format := range []string{"int64", "uint64"} {
+		t.Run(format, func(t *testing.T) {
+			spec := smallSpec("get")
+			op := spec.Paths["/things/{thing_id}"]["get"]
+			op.Parameters = append(op.Parameters, parameter{Name: "count", In: "query", Required: true, Type: "string", Format: format})
+			spec.Paths["/things/{thing_id}"]["get"] = op
+			limit, want := "int64(-9223372036854775808)", "-9223372036854775808"
+			if format == "uint64" {
+				limit, want = "^uint64(0)", "18446744073709551615"
+			}
+			testGeneratedPackage(t, generateSpec(t, spec), `package sourcecraft
+import "testing"
+func TestRequiredZero(t *testing.T) {
+ o:=&GetThingOptions{}
+ q,err:=o.queryValues()
+ if err!=nil || !q.Has("count") || q.Get("count")!="0" { t.Fatalf("required zero: %v %v",q,err) }
+ o.Count=42
+ q,err=o.queryValues()
+ if err!=nil || q.Get("count")!="42" { t.Fatalf("required count: %v %v",q,err) }
+ o.Count=`+limit+`
+ q,err=o.queryValues()
+ if err!=nil || q.Get("count")!="`+want+`" { t.Fatalf("required limit: %v %v",q,err) }
+ if _,err:=(*GetThingOptions)(nil).queryValues();err==nil { t.Fatal("nil required options accepted") }
+}
+`)
+		})
+	}
+}
+
+func TestPlatformRejectsStringIntegerEnumDefinitions(t *testing.T) {
+	for _, format := range []string{"int64", "uint64"} {
+		for _, location := range []string{"definition", "field", "array", "dictionary", "response", "body"} {
+			t.Run(format+"/"+location, func(t *testing.T) {
+				spec := smallSpec("post_query")
+				spec.Definitions["Counter"] = &schema{Type: "string", Format: format, Enum: []string{"1", "2"}}
+				ref := &schema{Ref: "#/definitions/Counter"}
+				op := spec.Paths["/things/{thing_id}"]["post"]
+				switch location {
+				case "field":
+					spec.Definitions["Thing"].Properties["count"] = ref
+				case "array":
+					spec.Definitions["Thing"].Properties["counts"] = &schema{Type: "array", Items: ref}
+				case "dictionary":
+					spec.Definitions["Thing"].Properties["counts"] = &schema{Type: "object", AdditionalProperties: ref}
+				case "response":
+					response := op.Responses["200"]
+					response.Schema = ref
+					op.Responses["200"] = response
+				case "body":
+					op.Parameters[1].Schema = ref
+				}
+				spec.Paths["/things/{thing_id}"]["post"] = op
+				data, err := json.Marshal(spec)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if outputs, err := generate(data); err == nil || outputs != nil || !strings.Contains(err.Error(), "string-encoded integers") {
+					t.Fatalf("string-encoded integer enum generated invalid JSON tags: outputs=%d error=%v", len(outputs), err)
+				}
+			})
+		}
+	}
+}

@@ -17,7 +17,9 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/skarm/sourcecraft"
 )
@@ -399,4 +401,103 @@ func optionField(t *testing.T, options reflect.Value, name string) reflect.Value
 	}
 	t.Fatalf("option field %s was not generated", name)
 	return reflect.Value{}
+}
+
+func TestConcurrentClientsKeepRequestsAndResultsIsolated(t *testing.T) {
+	const requests = 24
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	arrived := make(chan struct{}, 2*requests)
+	release := make(chan struct{})
+	httpClient := &http.Client{Transport: contractTransport(func(req *http.Request) (*http.Response, error) {
+		arrived <- struct{}{}
+		select {
+		case <-release:
+		case <-req.Context().Done():
+			return nil, req.Context().Err()
+		}
+
+		query := req.URL.Query()
+		token, bearer, body := query.Get("page_token"), "Bearer platform-token", `{"next_page_token":%q}`
+		if req.URL.Path == "/v1/repositories" {
+			token, bearer, body = query.Get("pageToken"), "Bearer appsec-token", `{"nextPageToken":%q}`
+			if query.Get("orgId") != "org-"+token {
+				return nil, fmt.Errorf("repository filter leaked across requests: %v", query)
+			}
+		}
+		if req.Header.Get("Authorization") != bearer {
+			return nil, fmt.Errorf("unexpected authorization for %s", req.URL.Path)
+		}
+
+		index, err := strconv.Atoi(token)
+		if err != nil {
+			return nil, err
+		}
+		status := http.StatusOK
+		if index%3 == 0 {
+			status, body = http.StatusTooManyRequests, `{"message":%q}`
+		}
+		return &http.Response{
+			StatusCode: status,
+			Header:     http.Header{"X-Request-Id": {bearer + "/" + token}},
+			Body:       io.NopCloser(strings.NewReader(fmt.Sprintf(body, token))),
+		}, nil
+	})}
+	platform, err := sourcecraft.NewClient("platform-token", sourcecraft.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatal(err)
+	}
+	security, err := sourcecraft.NewAppSecClient("appsec-token", sourcecraft.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var pending sync.WaitGroup
+	for i := range requests {
+		for _, appsec := range []bool{false, true} {
+			pending.Go(func() {
+				token := strconv.Itoa(i)
+				var response *sourcecraft.Response
+				var requestErr error
+				next, bearer := "", "Bearer platform-token"
+				if appsec {
+					bearer = "Bearer appsec-token"
+					page, metadata, err := security.ListRepositories(ctx, &sourcecraft.AppSecListRepositoriesOptions{OrgID: "org-" + token, PageToken: token})
+					response, requestErr = metadata, err
+					if page != nil {
+						next = page.NextPageToken
+					}
+				} else {
+					page, metadata, err := platform.ListMyRepositories(ctx, &sourcecraft.ListMyRepositoriesOptions{PageToken: token})
+					response, requestErr = metadata, err
+					if page != nil {
+						next = page.NextPageToken
+					}
+				}
+				if response == nil || response.Header.Get("X-Request-ID") != bearer+"/"+token {
+					t.Errorf("appsec=%v token=%s: metadata=%v error=%v", appsec, token, response, requestErr)
+					return
+				}
+				if i%3 == 0 {
+					apiErr, ok := errors.AsType[*sourcecraft.APIError](requestErr)
+					if !ok || apiErr.Message != token || apiErr.RequestID != bearer+"/"+token || response.StatusCode != http.StatusTooManyRequests {
+						t.Errorf("appsec=%v token=%s: response=%v error=%v", appsec, token, response, requestErr)
+					}
+				} else if requestErr != nil || next != token || response.StatusCode != http.StatusOK {
+					t.Errorf("appsec=%v token=%s: next=%q response=%v error=%v", appsec, token, next, response, requestErr)
+				}
+			})
+		}
+	}
+	for range 2 * requests {
+		select {
+		case <-arrived:
+		case <-ctx.Done():
+			close(release)
+			pending.Wait()
+			t.Fatal("concurrent requests did not all reach the transport")
+		}
+	}
+	close(release)
+	pending.Wait()
 }

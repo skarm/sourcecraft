@@ -149,7 +149,9 @@ func (g *generator) platformResponseType(op operation) string {
 	}
 
 	resultType := ""
+
 	if responseSchema != nil {
+		g.rejectQuotedInteger(responseSchema)
 		resultType = g.goType(responseSchema)
 	}
 
@@ -178,6 +180,7 @@ func (g *generator) methodSignature(b *bytes.Buffer, path, method string, op ope
 	}
 
 	if body != nil {
+		g.rejectQuotedInteger(body.Schema)
 		fmt.Fprintf(b, ", body *%s", g.inputType(body.Schema))
 	}
 
@@ -194,11 +197,15 @@ func (g *generator) methodSignature(b *bytes.Buffer, path, method string, op ope
 		}
 
 		form = content.Schema
+		rejectPlatformComposition(form)
+
 		if form.Properties[nameFile] == nil {
 			panic("missing multipart file: " + op.ID)
 		}
 
 		for _, field := range slices.Sorted(maps.Keys(form.Properties)) {
+			rejectPlatformComposition(form.Properties[field])
+
 			if field != nameFile {
 				if form.Properties[field].Type != typeString {
 					panic("unsupported multipart field: " + field)
@@ -309,7 +316,7 @@ func (g *generator) queryOptionField(b *bytes.Buffer, op operation, p parameter)
 
 func writePlatformQueryValue(b *bytes.Buffer, op operation, p parameter) {
 	field := "o." + goName(p.Name)
-	if p.Required && p.Type == typeString {
+	if p.Required && p.Type == typeString && p.Format != typeInt64 && p.Format != typeUint64 {
 		fmt.Fprintf(b, "if %s == \"\" { return nil, fmt.Errorf(%q) }\n", field, "sourcecraft: query parameter "+p.Name+" is required")
 	}
 

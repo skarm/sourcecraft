@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -586,7 +587,18 @@ func (g *appsecGenerator) optionValue(b *bytes.Buffer, p openAPIParameter) {
 			panic("unsupported AppSec query default: " + p.Name)
 		}
 
-		fmt.Fprintf(b, "value%s := %s\nif value%s == %s { value%s = %s }\n", goName(p.Name), value, goName(p.Name), zero, goName(p.Name), defaultValue)
+		literal := string(defaultValue)
+
+		if g.kind(resolved) == typeString {
+			var text string
+			if err := json.Unmarshal(defaultValue, &text); err != nil {
+				panic("invalid AppSec string query default: " + p.Name)
+			}
+
+			literal = strconv.Quote(text)
+		}
+
+		fmt.Fprintf(b, "value%s := %s\nif value%s == %s { value%s = %s }\n", goName(p.Name), value, goName(p.Name), zero, goName(p.Name), literal)
 		value = "value" + goName(p.Name)
 	}
 
@@ -738,7 +750,12 @@ func (g *appsecGenerator) methodSignature(b *bytes.Buffer, path, method string, 
 	fmt.Fprintf(b, "func (c *AppSecClient) %s(ctx context.Context", name)
 
 	for _, p := range pathParams {
-		fmt.Fprintf(b, ", %s %s", appsecVariable(p.Name), g.fieldType(p.Schema, true))
+		typ := g.fieldType(p.Schema, true)
+		if strings.HasPrefix(typ, "*") {
+			panic("nullable AppSec path parameters are unsupported")
+		}
+
+		fmt.Fprintf(b, ", %s %s", appsecVariable(p.Name), typ)
 	}
 
 	if bodyType != "" {

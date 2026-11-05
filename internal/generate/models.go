@@ -15,6 +15,7 @@ func (g *generator) models() []byte {
 
 	for _, name := range slices.Sorted(maps.Keys(g.spec.Definitions)) {
 		s := g.spec.Definitions[name]
+		rejectPlatformComposition(s)
 
 		typeName := goName(name)
 		if usedNames[typeName] {
@@ -35,6 +36,9 @@ func (g *generator) models() []byte {
 		comment(&b, typeName+" "+description)
 
 		if len(s.Enum) > 0 {
+			// Enum declarations have string underlying types, so their references
+			// cannot use the numeric model fields required by a ",string" tag.
+			g.rejectQuotedInteger(s)
 			fmt.Fprintf(&b, "type %s string\n\nconst (\n", typeName)
 
 			for _, value := range s.Enum {

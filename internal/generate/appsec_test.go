@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -106,4 +107,61 @@ func appsecFixture(kind string) string {
 		op = `"parameters":[{"name":"activityUuid","in":"path","required":true,"schema":{"type":"string"}},{"name":"gitRepo","in":"query","required":true,"schema":{"type":"string"}}],"responses":{"204":{}}`
 	}
 	return `{"openapi":"3.1.0","components":{"schemas":{` + models + `}},"paths":{"` + path + `":{"` + method + `":{` + op + `}}}}`
+}
+
+func TestAppSecRejectsNullablePathParameters(t *testing.T) {
+	for _, encoded := range []string{`{"type":["string","null"]}`, `{"type":["integer","null"]}`, `{"anyOf":[{"type":"string"},{"type":"null"}]}`} {
+		var spec openAPISpecification
+		if err := json.Unmarshal([]byte(appsecFixture("get")), &spec); err != nil {
+			t.Fatal(err)
+		}
+		op := spec.Paths["/v1/scans/{scanUuid}"]["get"]
+		op.Parameters[0].Schema = nil
+		if err := json.Unmarshal([]byte(encoded), &op.Parameters[0].Schema); err != nil {
+			t.Fatal(err)
+		}
+		spec.Paths["/v1/scans/{scanUuid}"]["get"] = op
+		data, err := json.Marshal(spec)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if outputs, err := generate(data); err == nil || outputs != nil || !strings.Contains(err.Error(), "nullable AppSec path") {
+			t.Fatalf("nullable path generated invalid code: outputs=%d error=%v", len(outputs), err)
+		}
+	}
+}
+
+func TestAppSecStringQueryDefaultsUseJSONEscapes(t *testing.T) {
+	var spec openAPISpecification
+	if err := json.Unmarshal([]byte(appsecFixture("get")), &spec); err != nil {
+		t.Fatal(err)
+	}
+	op := spec.Paths["/v1/scans/{scanUuid}"]["get"]
+	var assertions strings.Builder
+	for i, encoded := range []string{`"path\/to"`, `"\ud83d\ude80"`, `"\ud800"`, `"quote\"\nline"`, `"\u0000"`} {
+		name := "label" + strconv.Itoa(i)
+		op.Parameters = append(op.Parameters, openAPIParameter{Name: name, In: "query", Required: true, Schema: &openAPISchema{Type: openAPITypes{"string"}, Default: json.RawMessage(encoded)}})
+		var want string
+		if err := json.Unmarshal([]byte(encoded), &want); err != nil {
+			t.Fatal(err)
+		}
+		assertions.WriteString("if q.Get(" + strconv.Quote(name) + ") != " + strconv.Quote(want) + " { t.Fatalf(\"unexpected default: %q\",q.Get(" + strconv.Quote(name) + ")) }\n")
+	}
+	spec.Paths["/v1/scans/{scanUuid}"]["get"] = op
+	data, err := json.Marshal(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	outputs, err := generate(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testGeneratedPackage(t, outputs, `package sourcecraft
+import "testing"
+func TestDefaults(t *testing.T) {
+ o := &AppSecGetScanOptions{GitRepo:"repo"}
+ q,err := o.queryValues()
+ if err != nil { t.Fatal(err) }
+`+assertions.String()+`}
+`)
 }

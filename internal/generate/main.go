@@ -55,8 +55,30 @@ func run(specPath, outDir string, check bool) error {
 
 		return nil
 	}
+
+	if err := validateOutputPaths(specPath, outDir, names); err != nil {
+		return err
+	}
+
+	for _, name := range names {
+		if err := os.WriteFile(filepath.Join(outDir, name), outputs[name], 0o644); err != nil { //nolint:gosec // This file contains public source or contract metadata, not credentials.
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateOutputPaths(specPath, outDir string, names []string) error {
 	// Reject all known invalid targets before modifying the first output. This is
 	// a preflight check, not a multi-file transaction against filesystem failures.
+	inputInfo, err := os.Stat(specPath)
+	if err != nil {
+		return fmt.Errorf("stat specification %s: %w", specPath, err)
+	}
+
+	var existingTargets []os.FileInfo
+
 	for _, name := range names {
 		path := filepath.Join(outDir, name)
 
@@ -65,15 +87,33 @@ func run(specPath, outDir string, check bool) error {
 			return err
 		}
 
-		if err == nil && !info.Mode().IsRegular() {
+		if errors.Is(err, os.ErrNotExist) {
+			// A dangling link can alias another output that does not exist
+			// until the write loop starts. Existing links are checked by inode.
+			if _, linkErr := os.Lstat(path); linkErr == nil { //nolint:gosec // The local CLI caller selects the output directory; output names are fixed by the compiler.
+				return fmt.Errorf("%s has an unresolved output target", path)
+			} else if !errors.Is(linkErr, os.ErrNotExist) {
+				return linkErr
+			}
+
+			continue
+		}
+
+		if !info.Mode().IsRegular() {
 			return fmt.Errorf("%s is not a regular file", path)
 		}
-	}
 
-	for _, name := range names {
-		if err := os.WriteFile(filepath.Join(outDir, name), outputs[name], 0o644); err != nil { //nolint:gosec // This file contains public source or contract metadata, not credentials.
-			return err
+		if os.SameFile(inputInfo, info) {
+			return fmt.Errorf("%s aliases the specification %s", path, specPath)
 		}
+
+		for _, previous := range existingTargets {
+			if os.SameFile(previous, info) {
+				return fmt.Errorf("%s aliases another generated output", path)
+			}
+		}
+
+		existingTargets = append(existingTargets, info)
 	}
 
 	return nil

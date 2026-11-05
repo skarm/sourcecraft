@@ -6,26 +6,40 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/skarm/sourcecraft"
 )
 
 func main() {
-	if err := run(); err != nil {
+	if err := run(os.Args[1:], os.Stdout); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run() error {
-	repository := flag.String("repository", "", "repository UUID or internal numeric ID")
+func run(args []string, out io.Writer) error {
+	fs := flag.NewFlagSet("appsec", flag.ContinueOnError)
+	fs.SetOutput(out)
+	repository := fs.String("repository", "", "repository UUID or internal numeric ID")
 
-	flag.Parse()
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
+
+		return err
+	}
+
+	if fs.NArg() != 0 {
+		return errors.New("unexpected positional arguments")
+	}
 
 	token := os.Getenv("SOURCECRAFT_TOKEN")
-	if token == "" || *repository == "" {
+	if token == "" || strings.TrimSpace(*repository) == "" {
 		return errors.New("set SOURCECRAFT_TOKEN and pass -repository <repository UUID or ID>")
 	}
 
@@ -50,7 +64,9 @@ func run() error {
 			return err
 		}
 
-		fmt.Printf("%s\t%s\t%s\n", defect.UUID, defect.RuleName, defect.FileName)
+		if _, err := fmt.Fprintf(out, "%s\t%s\t%s\n", defect.UUID, defect.RuleName, defect.FileName); err != nil {
+			return err
+		}
 	}
 
 	return nil

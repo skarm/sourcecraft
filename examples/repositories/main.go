@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -13,12 +14,12 @@ import (
 )
 
 func main() {
-	if err := run(); err != nil {
+	if err := run(os.Stdout); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run() error {
+func run(out io.Writer) error {
 	token := os.Getenv("SOURCECRAFT_TOKEN")
 	if token == "" {
 		return errors.New("set SOURCECRAFT_TOKEN to a SourceCraft personal access token")
@@ -45,7 +46,9 @@ func run() error {
 			return err
 		}
 
-		fmt.Printf("%s\t%s\n", repository.Slug, repository.WebURL)
+		if _, err := fmt.Fprintf(out, "%s\t%s\n", repository.Slug, repository.WebURL); err != nil {
+			return err
+		}
 	}
 
 	return nil

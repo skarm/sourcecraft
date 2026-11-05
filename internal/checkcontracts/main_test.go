@@ -10,7 +10,10 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 )
 
@@ -19,6 +22,75 @@ const fixture = `{"swagger":"2.0","paths":{"/items":{"get":{"responses":{"200":{
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 type failingWriter struct{ err error }
+
+type trackedBody struct {
+	io.Reader
+	closed bool
+}
+
+func (b *trackedBody) Close() error {
+	b.closed = true
+	return nil
+}
+
+type failedReader struct{ err error }
+
+func (r failedReader) Read([]byte) (int, error) { return 0, r.err }
+
+func TestFetchClosesBodiesAndPreservesReadFailures(t *testing.T) {
+	readErr := errors.New("response body failed")
+	for _, tt := range []struct {
+		name   string
+		status int
+		reader io.Reader
+		want   error
+	}{
+		{"success", http.StatusOK, strings.NewReader(fixture), nil},
+		{"http_error", http.StatusServiceUnavailable, strings.NewReader("unavailable"), nil},
+		{"invalid_json", http.StatusOK, strings.NewReader("invalid"), nil},
+		{"read_error", http.StatusOK, io.MultiReader(strings.NewReader(fixture[:20]), failedReader{readErr}), readErr},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			body := &trackedBody{Reader: tt.reader}
+			client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+				return &http.Response{StatusCode: tt.status, Body: body, Header: make(http.Header)}, nil
+			})}
+			_, err := fetch(t.Context(), client, "https://example.test/schema")
+			if tt.name == "success" && err != nil || tt.name != "success" && err == nil {
+				t.Fatalf("unexpected result: %v", err)
+			}
+			if tt.want != nil && !errors.Is(err, tt.want) {
+				t.Fatalf("read failure was lost: %v", err)
+			}
+			if !body.closed {
+				t.Fatal("response body was not closed")
+			}
+		})
+	}
+}
+
+func TestFetchResponseSizeLimit(t *testing.T) {
+	for _, extra := range []int{0, 1} {
+		t.Run(strconv.Itoa(extra), func(t *testing.T) {
+			body := &trackedBody{Reader: io.MultiReader(strings.NewReader(fixture), strings.NewReader(strings.Repeat(" ", maxSpecBytes-len(fixture)+extra)))}
+			client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+				return &http.Response{StatusCode: 200, Body: body, Header: make(http.Header)}, nil
+			})}
+			data, err := fetch(t.Context(), client, "https://example.test/schema")
+			if extra == 0 {
+				want, canonicalErr := canonicalizeSpec([]byte(fixture))
+				if err != nil || canonicalErr != nil || !bytes.Equal(data, want) {
+					t.Fatalf("exact-limit response was not preserved: %v, %v", err, canonicalErr)
+				}
+			} else if err == nil || !strings.Contains(err.Error(), "exceeds") {
+				t.Fatalf("oversized response was not rejected: %v", err)
+			}
+			if !body.closed {
+				t.Fatal("response body was not closed")
+			}
+		})
+	}
+}
 
 func TestFailedRecheckRemovesPreviousSnapshots(t *testing.T) {
 	base, out := t.TempDir(), t.TempDir()
@@ -92,6 +164,148 @@ func TestCanonicalPreservesEveryContractFieldAndNumber(t *testing.T) {
 		if _, err := canonicalizeSpec([]byte(bad)); err == nil {
 			t.Errorf("invalid specification accepted: %s", bad)
 		}
+	}
+}
+
+func TestCanonicalRejectsDuplicateObjectNames(t *testing.T) {
+	for _, spec := range []string{
+		`{"swagger":"2.0","paths":{},"paths":{}}`,
+		`{"swagger":"2.0","paths":{},"definitions":{"Model":{"type":"integer"},"Model":{"type":"string"}}}`,
+		`{"swagger":"2.0","paths":{},"x-list":[{"name":1,"name":2}]}`,
+		`{"swagger":"2.0","paths":{},"x-value":{"name":1,"\u006eame":2}}`,
+	} {
+		if _, err := canonicalizeSpec([]byte(spec)); err == nil || !strings.Contains(err.Error(), "duplicate") {
+			t.Errorf("ambiguous specification was accepted: %s (error: %v)", spec, err)
+		}
+	}
+	// Repeated property names in separate objects are unambiguous.
+	if _, err := canonicalizeSpec([]byte(`{"swagger":"2.0","paths":{},"x-list":[{"name":1},{"name":2}]}`)); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestReportFilesCannotAliasInputs(t *testing.T) {
+	for _, link := range []struct {
+		name   string
+		create func(string, string) error
+	}{{"symlink", os.Symlink}, {"hardlink", os.Link}} {
+		for _, output := range []string{"platform.diff", "platform.local.json", "platform.published.json", "summary.md"} {
+			for _, input := range []string{"platform.json", "contracts.json"} {
+				t.Run(link.name+"/"+output+"/"+input, func(t *testing.T) {
+					base, out := t.TempDir(), t.TempDir()
+					path := writeFixtureManifest(t, base, []contract{{"platform", "platform.json", "https://example.test/schema"}})
+					inputPath := filepath.Join(base, input)
+					before, err := os.ReadFile(inputPath)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if err := link.create(inputPath, filepath.Join(out, output)); err != nil {
+						if link.name == "symlink" {
+							skipWindowsSymlinkPermission(t, err)
+						}
+						t.Fatal(err)
+					}
+					client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+						return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(fixture)), Header: make(http.Header)}, nil
+					})}
+					if err := run(t.Context(), path, out, client, io.Discard); err == nil {
+						t.Fatal("report file aliasing an input was accepted")
+					}
+					after, err := os.ReadFile(inputPath)
+					if err != nil || !bytes.Equal(before, after) {
+						t.Fatalf("input was changed: %v", err)
+					}
+				})
+			}
+		}
+	}
+}
+
+func TestSnapshotSymlinkCannotPointToReportFile(t *testing.T) {
+	base, out := t.TempDir(), t.TempDir()
+	path := writeFixtureManifest(t, base, []contract{{"platform", "platform.json", "https://example.test/schema"}})
+	snapshot := filepath.Join(base, "platform.json")
+	artifact := filepath.Join(out, "platform.local.json")
+	if err := os.WriteFile(artifact, []byte(fixture), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(snapshot); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(artifact, snapshot); err != nil {
+		skipWindowsSymlinkPermission(t, err)
+		t.Fatal(err)
+	}
+	if err := run(t.Context(), path, out, http.DefaultClient, io.Discard); err == nil {
+		t.Fatal("report cleanup accepted the snapshot's target")
+	}
+	data, err := os.ReadFile(snapshot)
+	if err != nil || string(data) != fixture {
+		t.Fatalf("snapshot's target was removed or changed: %v", err)
+	}
+}
+
+func TestSummarySymlinkCannotOverwriteReportSnapshots(t *testing.T) {
+	for _, suffix := range []string{".local.json", ".published.json", ".diff"} {
+		t.Run(suffix, func(t *testing.T) {
+			base, out := t.TempDir(), t.TempDir()
+			path := writeFixtureManifest(t, base, []contract{{"platform", "platform.json", "https://example.test/schema"}})
+			artifact := filepath.Join(out, "platform"+suffix)
+			if err := os.WriteFile(artifact, []byte(fixture), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink(artifact, filepath.Join(out, "summary.md")); err != nil {
+				skipWindowsSymlinkPermission(t, err)
+				t.Fatal(err)
+			}
+			client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(fixture)), Header: make(http.Header)}, nil
+			})}
+			if err := run(t.Context(), path, out, client, io.Discard); err != nil {
+				t.Fatal(err)
+			}
+			if suffix == ".diff" {
+				if _, err := os.Stat(artifact); !os.IsNotExist(err) {
+					t.Fatalf("unchanged contract has a stale diff: %v", err)
+				}
+				return
+			}
+			got, err := os.ReadFile(artifact)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want, err := canonicalizeSpec([]byte(fixture))
+			if err != nil || !bytes.Equal(got, want) {
+				t.Fatalf("canonical snapshot was overwritten: %v\n%s", err, got)
+			}
+		})
+	}
+}
+
+func TestReportPreflightChecksOtherContractsBeforeCleanup(t *testing.T) {
+	base, out := t.TempDir(), t.TempDir()
+	path := writeFixtureManifest(t, base, []contract{
+		{"first", "first.json", "https://example.test/first"},
+		{"second", "second.json", "https://example.test/second"},
+	})
+	artifact := filepath.Join(out, "first.local.json")
+	if err := os.WriteFile(artifact, []byte(fixture), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	second := filepath.Join(base, "second.json")
+	if err := os.Remove(second); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(artifact, second); err != nil {
+		skipWindowsSymlinkPermission(t, err)
+		t.Fatal(err)
+	}
+	if err := run(t.Context(), path, out, http.DefaultClient, io.Discard); err == nil {
+		t.Fatal("first contract cleanup accepted a second contract's snapshot")
+	}
+	data, err := os.ReadFile(second)
+	if err != nil || string(data) != fixture {
+		t.Fatalf("second contract's snapshot was removed or changed: %v", err)
 	}
 }
 
@@ -175,16 +389,26 @@ func TestFetchFailureDoesNotSkipOtherContracts(t *testing.T) {
 }
 
 func TestManifestRequiresAllSnapshots(t *testing.T) {
-	base := t.TempDir()
-	path := writeFixtureManifest(t, base, []contract{{"platform", "platform.json", "https://example.test/schema"}})
-	if _, err := readManifest(path); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(base, "another.openapi.json"), []byte(fixture), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := readManifest(path); err == nil || !strings.Contains(err.Error(), "missing from the contract manifest") {
-		t.Fatalf("unregistered contract accepted: %v", err)
+	for _, dir := range []string{"api", "api[review]", "api?review", "api*review"} {
+		t.Run(dir, func(t *testing.T) {
+			if runtime.GOOS == "windows" && strings.ContainsAny(dir, "?*") {
+				t.Skip("Windows does not permit ? or * in directory names")
+			}
+			base := filepath.Join(t.TempDir(), dir)
+			if err := os.Mkdir(base, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			path := writeFixtureManifest(t, base, []contract{{"platform", "platform.json", "https://example.test/schema"}})
+			if _, err := readManifest(path); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(base, "another.openapi.json"), []byte(fixture), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := readManifest(path); err == nil || !strings.Contains(err.Error(), "missing from the contract manifest") {
+				t.Fatalf("unregistered contract accepted: %v", err)
+			}
+		})
 	}
 }
 
@@ -238,6 +462,15 @@ func TestRunReturnsOutputFailure(t *testing.T) {
 }
 
 func (w failingWriter) Write([]byte) (int, error) { return 0, w.err }
+
+func skipWindowsSymlinkPermission(t *testing.T, err error) {
+	t.Helper()
+	// Windows may require SeCreateSymbolicLinkPrivilege unless Developer Mode is enabled.
+	const privilegeNotHeld syscall.Errno = 1314
+	if runtime.GOOS == "windows" && (errors.Is(err, os.ErrPermission) || errors.Is(err, privilegeNotHeld)) {
+		t.Skipf("Windows did not grant symbolic-link creation: %v", err)
+	}
+}
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 

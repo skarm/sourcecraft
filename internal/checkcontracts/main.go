@@ -74,6 +74,16 @@ func run(ctx context.Context, manifestPath, outDir string, client *http.Client, 
 		return errors.New("report directory must differ from the snapshot directory")
 	}
 
+	if err := validateReportPaths(manifestPath, outDir, contracts); err != nil {
+		return err
+	}
+
+	// Recreate the summary as a regular file, just like the contract artifacts.
+	// An old symlink must not redirect this write onto a canonical snapshot.
+	if err := os.Remove(filepath.Join(outDir, "summary.md")); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+
 	var summary strings.Builder
 	fmt.Fprint(&summary, "## API contract comparison\n\n")
 
@@ -107,6 +117,50 @@ func run(ctx context.Context, manifestPath, outDir string, client *http.Client, 
 	}
 
 	return outputErr
+}
+
+// Preflight all artifacts before removing any old report: input snapshots may
+// themselves be symlinks into the report directory, and summary.md is rewritten.
+func validateReportPaths(manifestPath, outDir string, contracts []contract) error {
+	inputs := make([]string, 1, 1+len(contracts))
+	inputs[0] = manifestPath
+	outputs := make([]string, 1, 1+3*len(contracts))
+
+	outputs[0] = filepath.Join(outDir, "summary.md")
+	for _, c := range contracts {
+		inputs = append(inputs, filepath.Join(filepath.Dir(manifestPath), c.Snapshot))
+		for _, suffix := range []string{".diff", ".local.json", ".published.json"} {
+			outputs = append(outputs, filepath.Join(outDir, c.Name+suffix))
+		}
+	}
+
+	for _, input := range inputs {
+		inputInfo, err := os.Stat(input)
+		if errors.Is(err, os.ErrNotExist) {
+			continue // A missing snapshot is reported independently by compare.
+		}
+
+		if err != nil {
+			return err
+		}
+
+		for _, output := range outputs {
+			outputInfo, err := os.Stat(output)
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+
+			if err != nil {
+				return err
+			}
+
+			if os.SameFile(inputInfo, outputInfo) {
+				return fmt.Errorf("report file %s aliases input %s", output, input)
+			}
+		}
+	}
+
+	return nil
 }
 
 func readManifest(path string) ([]contract, error) {
@@ -147,14 +201,14 @@ func readManifest(path string) ([]contract, error) {
 		names[c.Name], snapshots[c.Snapshot] = true, true
 	}
 
-	files, err := filepath.Glob(filepath.Join(filepath.Dir(path), "*.json"))
+	files, err := os.ReadDir(filepath.Dir(path))
 	if err != nil {
 		return nil, err
 	}
 
 	for _, file := range files {
-		if filepath.Base(file) != filepath.Base(path) && !snapshots[filepath.Base(file)] {
-			return nil, fmt.Errorf("snapshot %s is missing from the contract manifest", file)
+		if strings.HasSuffix(file.Name(), ".json") && file.Name() != filepath.Base(path) && !snapshots[file.Name()] {
+			return nil, fmt.Errorf("snapshot %s is missing from the contract manifest", filepath.Join(filepath.Dir(path), file.Name()))
 		}
 	}
 
@@ -171,12 +225,13 @@ func canonicalizeSpec(data []byte) ([]byte, error) {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.UseNumber()
 
-	var value map[string]any
-	if err := decoder.Decode(&value); err != nil {
+	decoded, err := decodeSpecValue(decoder)
+	if err != nil {
 		return nil, err
 	}
 
-	if value == nil {
+	value, ok := decoded.(map[string]any)
+	if !ok {
 		return nil, errors.New("specification must be a JSON object")
 	}
 
@@ -197,6 +252,64 @@ func canonicalizeSpec(data []byte) ([]byte, error) {
 	}
 
 	return append(encoded, '\n'), nil
+}
+
+// JSON permits duplicate object names with implementation-dependent decoding.
+// Reject them rather than silently discarding part of the compared contract.
+func decodeSpecValue(decoder *json.Decoder) (any, error) {
+	value, err := decoder.Token()
+	if err != nil {
+		return nil, err
+	}
+
+	switch value {
+	case json.Delim('{'):
+		object := make(map[string]any)
+
+		for decoder.More() {
+			nameToken, err := decoder.Token()
+			if err != nil {
+				return nil, err
+			}
+
+			name, ok := nameToken.(string)
+			if !ok {
+				return nil, errors.New("JSON object name is not a string")
+			}
+
+			if _, exists := object[name]; exists {
+				return nil, fmt.Errorf("duplicate JSON object name %q", name)
+			}
+
+			member, err := decodeSpecValue(decoder)
+			if err != nil {
+				return nil, err
+			}
+
+			object[name] = member
+		}
+
+		_, err = decoder.Token()
+
+		return object, err
+	case json.Delim('['):
+		array := make([]any, 0)
+
+		for decoder.More() {
+			element, err := decodeSpecValue(decoder)
+			if err != nil {
+				return nil, err
+			}
+
+			array = append(array, element)
+		}
+
+		_, err = decoder.Token()
+
+		return array, err
+	default:
+		return value, nil
+	}
 }
 
 func fetch(ctx context.Context, client *http.Client, source string) ([]byte, error) {

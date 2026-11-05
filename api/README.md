@@ -43,7 +43,9 @@ AppSec tests read the pinned specification independently, call all 27 methods, a
 
 `internal/generate` is one internal command package. `main.go` handles flags, reads the schema, and checks or writes output files. The `generate` function in `generate.go` accepts JSON and prepares both Go files in memory. Schema and type rules are in `schema.go`, naming in `names.go`, models in `models.go`, and methods and query parameters in `operations.go`.
 
-Both files are prepared and existing output paths are checked before writing starts. A directory in place of either output file is rejected before the other file is changed. The writes are not a filesystem transaction: a disk failure or another program changing the files may require regeneration.
+Both files are prepared and output paths are checked before writing starts. Directories, dangling symbolic links, outputs aliasing the input specification, and outputs aliasing one another are rejected before either file is changed. Existing symbolic links to independent regular files remain supported. The writes are not a filesystem transaction: a disk failure or another program changing the files may require regeneration.
+
+Unsupported schema composition (`allOf`, `anyOf`, `oneOf`) is rejected. String-encoded integers are supported in numeric model fields and query parameters; scalar JSON bodies/responses, collection elements and string enum definitions using those formats require separate support. Rejecting these constructs prevents generation of code that silently loses data or uses the wrong JSON representation. AppSec also rejects nullable path parameters.
 
 An `operationId` must be a valid exported Go identifier so SDK consumers can call the method. Declaration validation rejects collisions across output files and with the handwritten SDK runtime. The compiler also rejects JSON names that the standard encoder cannot represent with a struct tag, and objects that mix static properties with dynamic keys. The `AppSec` type and constant prefix is reserved for the security API, so the platform schema cannot declare names in that namespace.
 
@@ -55,7 +57,7 @@ Canonical platform models follow the explicit policy in `internal/generate/platf
 
 When request usage needs pointers to distinguish omitted fields from zero values, the compiler creates a separate `<Model>Input` projection. Projections propagate through nested objects, arrays, dictionaries, and cyclic references. New methods accept the input projection, while responses use the canonical model. For example, adding a method with a `Branch` body creates `BranchInput.Name *string` and preserves `Branch.Name string`. A projection name that collides with an existing declaration is rejected before writing files. AppSec uses its own stable rules.
 
-The [public-api.golden](public-api.golden) snapshot records 1122 public declarations across both clients: types, exported fields and their order and tags, signatures and methods, exact constant values, aliases, and type-parameter constraints. It also checks comparability: changing a private field can make a public type unusable with `==` or as a map key. Argument names, documentation, and private fields alone are not treated as public contracts.
+The [public-api.golden](public-api.golden) snapshot records 1149 public API entries across both clients: types, exported fields and their order and tags, signatures and methods, exact constant values, aliases, and type-parameter constraints. It includes accessible fields and methods exposed through embedding or aliases, including private embedded types. It also checks comparability: changing a private field can make a public type unusable with `==` or as a map key. Argument names, including nested callback arguments, documentation, and private fields alone are not treated as public contracts.
 
 Run the compatibility check:
 
@@ -86,9 +88,11 @@ go run ./internal/checkcontracts
 go run ./internal/checkcontracts -out /tmp/sourcecraft-contracts
 ```
 
-The report directory must differ from the snapshot directory. On each recheck, old diffs and canonical snapshots are removed for that contract, so a failed download cannot leave stale data in the new report.
+The report directory must differ from the snapshot directory. Before cleanup, the checker rejects report files that alias an input snapshot or the manifest, including symbolic and hard links. On each recheck, the old summary, diffs and canonical snapshots are removed, so a failed download cannot leave stale data in the new report.
 
 Without `-out`, the command creates a temporary directory. It compares each complete document: routes, methods, models and events, fields and enums, parameters, request bodies, responses, authentication, versions, and descriptions. It ignores whitespace and object-key order. Array order and numeric text are preserved; large numbers are not converted to `float64`. Any difference, including a description change, counts as contract drift. The command does not classify changes as breaking or non-breaking.
+
+Duplicate JSON object names are rejected as ambiguous instead of silently discarding earlier values.
 
 For each successfully downloaded contract, the report contains `<name>.local.json` and `<name>.published.json`, plus `<name>.diff` when the documents differ. The shared `summary.md` distinguishes `unchanged`, `CHANGED`, and `ERROR`. Every contract is checked even if another fails. Both drift and download or parsing errors produce a nonzero exit code; a network failure never counts as a matching schema. Downloads have a 30-second HTTP timeout and a 32 MiB size limit.
 
