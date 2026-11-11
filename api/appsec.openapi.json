@@ -146,6 +146,36 @@
           }
         }
       },
+      "ArtifactDownloadDto" : {
+        "type" : "object",
+        "required" : [ "artifactKey", "presignedUrl", "engineName", "engineType" ],
+        "properties" : {
+          "artifactKey" : {
+            "type" : "string"
+          },
+          "presignedUrl" : {
+            "type" : "string"
+          },
+          "engineName" : {
+            "type" : "string"
+          },
+          "engineType" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ArtifactPresignedUrlsDto" : {
+        "type" : "object",
+        "required" : [ "artifacts" ],
+        "properties" : {
+          "artifacts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ArtifactDownloadDto"
+            }
+          }
+        }
+      },
       "AttachmentDto" : {
         "type" : "object",
         "properties" : {
@@ -320,6 +350,64 @@
           "threadFlowIndex" : {
             "type" : "integer",
             "format" : "int32"
+          }
+        }
+      },
+      "CodeFlowStepDto" : {
+        "type" : "object",
+        "required" : [ "fileName", "startLine", "endLine", "startColumn", "endColumn", "codeBlock", "message", "stepOrder", "codeFlowIndex", "threadFlowIndex", "locationType" ],
+        "properties" : {
+          "fileName" : {
+            "type" : "string"
+          },
+          "startLine" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "endLine" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "startColumn" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "endColumn" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "codeBlock" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "stepOrder" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "codeFlowIndex" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "threadFlowIndex" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "locationType" : {
+            "$ref" : "#/components/schemas/LocationType"
+          }
+        }
+      },
+      "CodeFlowStepsResponse" : {
+        "type" : "object",
+        "required" : [ "codeFlowSteps" ],
+        "properties" : {
+          "codeFlowSteps" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CodeFlowStepDto"
+            }
           }
         }
       },
@@ -612,6 +700,9 @@
             "items" : {
               "$ref" : "#/components/schemas/DefectGroupLinkDto"
             }
+          },
+          "hasCodeFlow" : {
+            "type" : [ "boolean", "null" ]
           }
         }
       },
@@ -987,6 +1078,10 @@
         "type" : "string",
         "enum" : [ "EXTERNAL_URL", "SOURCECRAFT_ISSUE", "SOURCECRAFT_PR", "YA_TRACKER" ]
       },
+      "LocationType" : {
+        "type" : "string",
+        "enum" : [ "LOCATION_TYPE_UNSPECIFIED", "LOCATION_TYPE_FILE", "LOCATION_TYPE_LINE", "LOCATION_TYPE_FRAGMENT", "LOCATION_TYPE_DAST_TARGET", "UNRECOGNIZED" ]
+      },
       "OperationStatus" : {
         "type" : "string",
         "enum" : [ "IN_PROGRESS", "COMPLETED", "FAILED" ]
@@ -999,6 +1094,28 @@
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/Activity"
+            }
+          },
+          "nextPageToken" : {
+            "type" : "string"
+          },
+          "totalSize" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "listRevision" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "PaginatedResponseArtifactDownloadDto" : {
+        "type" : "object",
+        "required" : [ "data", "nextPageToken", "totalSize" ],
+        "properties" : {
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ArtifactDownloadDto"
             }
           },
           "nextPageToken" : {
@@ -1332,7 +1449,7 @@
           },
           "prUuid" : {
             "type" : [ "string", "null" ],
-            "description" : "Pull Request UUID (CI env SOURCECRAFT_PR_UUID)."
+            "description" : "Public pull request UUID or decimal platform PR ID in the range 1..18446744073709551615. A numeric value is a platform ID, not the repository-local PR number. Omit or leave blank for a branch scan."
           },
           "reactive" : {
             "type" : "boolean"
@@ -2203,6 +2320,125 @@
         "tags" : [ "Ai Fix Run Rest Api" ]
       }
     },
+    "/v1/artifacts" : {
+      "get" : {
+        "summary" : "List scan artifacts with presigned download URLs",
+        "description" : "Lists artifacts of the selected scan, or the latest successful default-branch scan of the requested scanType. Each artifact includes a fresh presignedUrl, valid for 15 minutes. An artifact whose file is missing from S3 has an empty presignedUrl. An explicit scanUuid must belong to this repository and takes precedence over scanType.",
+        "tags" : [ "Artifacts" ],
+        "parameters" : [ {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "Page size, from 1 to 250. Default: 50.",
+          "example" : 50,
+          "name" : "pageSize",
+          "in" : "query",
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 250,
+            "minimum" : 1,
+            "default" : 50
+          },
+          "required" : true
+        }, {
+          "description" : "Omit for the first page. Use nextPageToken from the response for subsequent pages, keeping all other parameters unchanged. An empty nextPageToken means the last page.",
+          "name" : "pageToken",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        }, {
+          "description" : "Latest-scan selection: SCAN_TYPE_DEFAULT (default), SCAN_TYPE_AUDIT or SCAN_TYPE_CLOUD_DAST.",
+          "name" : "scanType",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        }, {
+          "description" : "Scan UUID to select. Omit or leave blank to use the repository's latest scan. Scan UUIDs can be obtained from the scan listing endpoints.",
+          "example" : "01890f3e-7b5c-7cc2-bc6f-3f5d8c9a1e4a",
+          "name" : "scanUuid",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        }, {
+          "description" : "Engine type: UNSPECIFIED (all), SECRETS, SCA, SAST, SBOM_SPDX, SBOM_CYCLONEDX, DAST or AI_AUDIT.",
+          "name" : "type",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PaginatedResponseArtifactDownloadDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/artifacts/presigned-urls" : {
+      "get" : {
+        "summary" : "Get presigned S3 URLs for a commit's artifacts",
+        "description" : "Returns unique artifacts from all scans of this commit in the repository, matching gRPC GetArtifactPresignedUrlsByCommitHash. Returns 404 when there are no artifacts. An artifact whose file is missing from S3 has an empty presignedUrl.",
+        "tags" : [ "Artifacts" ],
+        "parameters" : [ {
+          "description" : "Commit hash whose scan artifacts to download",
+          "required" : true,
+          "name" : "commitHash",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ArtifactPresignedUrlsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/defect-groups" : {
       "get" : {
         "parameters" : [ {
@@ -2813,6 +3049,44 @@
         "tags" : [ "Findings Rest Api" ]
       }
     },
+    "/v1/findings/{findingUuid}/code-flow" : {
+      "get" : {
+        "summary" : "List a finding's SAST code-flow steps",
+        "description" : "Returns steps ordered by codeFlowIndex, threadFlowIndex and stepOrder. Returns an empty list when the finding has no steps or does not belong to this repository.",
+        "parameters" : [ {
+          "description" : "UUID of the finding returned by /v1/findings",
+          "required" : true,
+          "name" : "findingUuid",
+          "in" : "path",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CodeFlowStepsResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags" : [ "Findings Rest Api" ]
+      }
+    },
     "/v1/reports/generate" : {
       "post" : {
         "summary" : "Start generating a PDF or SARIF report",
@@ -3180,10 +3454,50 @@
         "tags" : [ "Scan Rest Api" ]
       }
     },
+    "/v1/scans/latest-running" : {
+      "get" : {
+        "summary" : "Get the latest running scan of the requested type",
+        "description" : "Returns the newest running default-branch scan, excluding pull-request, finished and failed scans. Returns 404 when no scan of the requested type is running.",
+        "parameters" : [ {
+          "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
+          "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
+          "required" : true,
+          "name" : "gitRepo",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "pattern" : "\\S"
+          }
+        }, {
+          "description" : "Scan type: SCAN_TYPE_DEFAULT (default), SCAN_TYPE_AUDIT or SCAN_TYPE_CLOUD_DAST. Omit or leave blank for SCAN_TYPE_DEFAULT. Names are case-sensitive.",
+          "example" : "SCAN_TYPE_CLOUD_DAST",
+          "name" : "scanType",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ScanSummaryDto"
+                }
+              }
+            }
+          }
+        },
+        "tags" : [ "Scan Rest Api" ]
+      }
+    },
     "/v1/scans/sca" : {
       "post" : {
         "summary" : "Start an SCA rescan from the latest saved SBOM",
-        "description" : "Uses the newest default-branch scan with a saved SBOM, even if a newer scan has only other reports. Runs SCA in CI using that SBOM and its commit, and saves results in a new scan. No request body is needed. Returns after CI accepts the run; results will arrive later.",
+        "description" : "Uses the newest default-branch scan with a saved SBOM, even if a newer scan has only other reports. Runs SCA in CI using that SBOM and its commit, and saves results in a new scan. AppSec must be enabled. Background scanning and SCA switches do not restrict this manual run. No request body is needed. Returns after CI accepts the run; results will arrive later.",
         "tags" : [ "SCA Rescans" ],
         "parameters" : [ {
           "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
@@ -3214,7 +3528,7 @@
             "description" : "Missing or invalid authorization header"
           },
           "403" : {
-            "description" : "Permission denied or SCA scanning is disabled"
+            "description" : "Permission denied or AppSec is disabled"
           },
           "404" : {
             "description" : "Repository or saved default-branch SBOM not found"
@@ -3275,6 +3589,9 @@
     }
   },
   "tags" : [ {
+    "name" : "Artifacts",
+    "description" : "List and download original scan artifacts, including SBOM and SARIF files."
+  }, {
     "name" : "Report Upload",
     "description" : "Upload security analysis reports (SARIF/SBOM/TEXT/AUDIT) for a repository."
   }, {

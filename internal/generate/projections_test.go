@@ -45,11 +45,15 @@ func TestInputWire(t *testing.T) {
  if err != nil || string(data) != "{\"name\":\"\"}" { t.Fatalf("zero-valued input: %s %v",data,err) }
 }
 `)
-	// Removing input operations also cannot change the canonical model layout.
+	// With no input operations, the output contains only canonical models.
+	// Compare those declarations because the pinned spec also emits projections.
 	spec.Paths = map[string]map[string]operation{}
 	withoutInputs := generateSpec(t, spec)
-	if !bytes.Equal(before["models_gen.go"], withoutInputs["models_gen.go"]) {
-		t.Fatal("canonical models changed after removing input usages")
+	withInputDeclarations := declarations(t, before["models_gen.go"])
+	for name, canonical := range declarations(t, withoutInputs["models_gen.go"]) {
+		if withInputDeclarations[name] != canonical {
+			t.Errorf("canonical %s changed after removing input usages", name)
+		}
 	}
 }
 

@@ -87,6 +87,19 @@ type AppSecArtifact struct {
 	UUID       *AppSecUUID       `json:"uuid,omitzero"`
 }
 
+// AppSecArtifactDownloadDTO is the AppSec API model for ArtifactDownloadDto.
+type AppSecArtifactDownloadDTO struct {
+	ArtifactKey  string `json:"artifactKey"`
+	EngineName   string `json:"engineName"`
+	EngineType   string `json:"engineType"`
+	PresignedURL string `json:"presignedUrl"`
+}
+
+// AppSecArtifactPresignedURLsDTO is the AppSec API model for ArtifactPresignedUrlsDto.
+type AppSecArtifactPresignedURLsDTO struct {
+	Artifacts []*AppSecArtifactDownloadDTO `json:"artifacts"`
+}
+
 // AppSecAttachmentDTO is the AppSec API model for AttachmentDto.
 type AppSecAttachmentDTO struct {
 	ID *string `json:"id,omitzero"`
@@ -150,6 +163,26 @@ type AppSecCodeFlowStep struct {
 	StepOrder       *int32         `json:"stepOrder,omitzero"`
 	ThreadFlowIndex *int32         `json:"threadFlowIndex,omitzero"`
 	UUID            *AppSecUUID    `json:"uuid,omitzero"`
+}
+
+// AppSecCodeFlowStepDTO is the AppSec API model for CodeFlowStepDto.
+type AppSecCodeFlowStepDTO struct {
+	CodeBlock       string             `json:"codeBlock"`
+	CodeFlowIndex   int32              `json:"codeFlowIndex"`
+	EndColumn       int64              `json:"endColumn"`
+	EndLine         int64              `json:"endLine"`
+	FileName        string             `json:"fileName"`
+	LocationType    AppSecLocationType `json:"locationType"`
+	Message         string             `json:"message"`
+	StartColumn     int64              `json:"startColumn"`
+	StartLine       int64              `json:"startLine"`
+	StepOrder       int32              `json:"stepOrder"`
+	ThreadFlowIndex int32              `json:"threadFlowIndex"`
+}
+
+// AppSecCodeFlowStepsResponse is the AppSec API model for CodeFlowStepsResponse.
+type AppSecCodeFlowStepsResponse struct {
+	CodeFlowSteps []*AppSecCodeFlowStepDTO `json:"codeFlowSteps"`
 }
 
 // AppSecCommit is the AppSec API model for Commit.
@@ -221,6 +254,7 @@ type AppSecDefectGroupDTO struct {
 	FirstTimeFound   int64       `json:"firstTimeFound"`
 	FixOperationUUID *AppSecUUID `json:"fixOperationUuid,omitzero"`
 	GitRepo          string      `json:"gitRepo"`
+	HasCodeFlow      *bool       `json:"hasCodeFlow,omitzero"`
 	HelpText         *string     `json:"helpText,omitzero"`
 	// Deprecated: deprecated by the AppSec specification.
 	ID              int64                       `json:"id"`
@@ -419,6 +453,18 @@ const (
 	AppSecLinkTypeYaTracker        AppSecLinkType = "YA_TRACKER"
 )
 
+// AppSecLocationType is the AppSec API model for LocationType.
+type AppSecLocationType string
+
+const (
+	AppSecLocationTypeLocationTypeUnspecified AppSecLocationType = "LOCATION_TYPE_UNSPECIFIED"
+	AppSecLocationTypeLocationTypeFile        AppSecLocationType = "LOCATION_TYPE_FILE"
+	AppSecLocationTypeLocationTypeLine        AppSecLocationType = "LOCATION_TYPE_LINE"
+	AppSecLocationTypeLocationTypeFragment    AppSecLocationType = "LOCATION_TYPE_FRAGMENT"
+	AppSecLocationTypeLocationTypeDastTarget  AppSecLocationType = "LOCATION_TYPE_DAST_TARGET"
+	AppSecLocationTypeUnrecognized            AppSecLocationType = "UNRECOGNIZED"
+)
+
 // AppSecOperationStatus is the AppSec API model for OperationStatus.
 type AppSecOperationStatus string
 
@@ -434,6 +480,14 @@ type AppSecPaginatedResponseActivity struct {
 	ListRevision  *string           `json:"listRevision,omitzero"`
 	NextPageToken string            `json:"nextPageToken"`
 	TotalSize     int64             `json:"totalSize"`
+}
+
+// AppSecPaginatedResponseArtifactDownloadDTO is the AppSec API model for PaginatedResponseArtifactDownloadDto.
+type AppSecPaginatedResponseArtifactDownloadDTO struct {
+	Data          []*AppSecArtifactDownloadDTO `json:"data"`
+	ListRevision  *string                      `json:"listRevision,omitzero"`
+	NextPageToken string                       `json:"nextPageToken"`
+	TotalSize     int64                        `json:"totalSize"`
 }
 
 // AppSecPaginatedResponseDefectGroupDTO is the AppSec API model for PaginatedResponseDefectGroupDto.
@@ -562,7 +616,7 @@ type AppSecReportUploadForm struct {
 	File *Upload `json:"-"`
 	// When true, respond 202 immediately and process the report in the background; otherwise process synchronously and respond 200 (or 400 on parse errors).
 	IsReactive *bool `json:"isReactive,omitzero"`
-	// Pull Request UUID (CI env SOURCECRAFT_PR_UUID).
+	// Public pull request UUID or decimal platform PR ID in the range 1..18446744073709551615. A numeric value is a platform ID, not the repository-local PR number. Omit or leave blank for a branch scan.
 	PRUUID   *string `json:"prUuid,omitzero"`
 	Reactive *bool   `json:"reactive,omitzero"`
 	// Format of the uploaded report.

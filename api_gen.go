@@ -2876,6 +2876,16 @@ func (c *Client) AddReleaseAssetAttachmentByID(ctx context.Context, releaseID st
 	return doUpload[ReleaseAsset](ctx, c, http.MethodPost, path, nil, file, []formField{})
 }
 
+// GetReleaseAttachmentByID calls GET /releases/id:{release_id}/attachments/{attachment_id}.
+// Get release attachment (By Release ID).
+func (c *Client) GetReleaseAttachmentByID(ctx context.Context, releaseID string, attachmentID string) (*AttachmentDownloadable, *Response, error) {
+	path, err := expandPath("/releases/id:{release_id}/attachments/{attachment_id}", pathParam{"release_id", releaseID}, pathParam{"attachment_id", attachmentID})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[AttachmentDownloadable](ctx, c, http.MethodGet, path, nil, nil)
+}
+
 // DiscardByID calls POST /releases/id:{release_id}/discard.
 // Discard Release (By ID).
 func (c *Client) DiscardByID(ctx context.Context, releaseID string) (*Release, *Response, error) {
@@ -5777,6 +5787,16 @@ func (c *Client) AddReleaseAssetAttachment(ctx context.Context, orgSlug string, 
 	return doUpload[ReleaseAsset](ctx, c, http.MethodPost, path, nil, file, []formField{{"name", name}})
 }
 
+// GetReleaseAttachment calls GET /repos/{org_slug}/{repo_slug}/releases/tag/{release_tag}/attachments/{attachment_id}.
+// Get release attachment.
+func (c *Client) GetReleaseAttachment(ctx context.Context, orgSlug string, repoSlug string, releaseTag string, attachmentID string) (*AttachmentDownloadable, *Response, error) {
+	path, err := expandPath("/repos/{org_slug}/{repo_slug}/releases/tag/{release_tag}/attachments/{attachment_id}", pathParam{"org_slug", orgSlug}, pathParam{"repo_slug", repoSlug}, pathParam{"release_tag", releaseTag}, pathParam{"attachment_id", attachmentID})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[AttachmentDownloadable](ctx, c, http.MethodGet, path, nil, nil)
+}
+
 // DiscardByTag calls POST /repos/{org_slug}/{repo_slug}/releases/tag/{release_tag}/discard.
 // Discard Release (By Tag).
 func (c *Client) DiscardByTag(ctx context.Context, orgSlug string, repoSlug string, releaseTag string) (*Release, *Response, error) {
@@ -6165,6 +6185,39 @@ func (c *Client) GetMyCodeAssistBillingOrg(ctx context.Context) (*Organization, 
 		return nil, nil, err
 	}
 	return doJSON[Organization](ctx, c, http.MethodGet, path, nil, nil)
+}
+
+// CreatePAT calls POST /user/pats.
+// Issue a personal access token for the authenticated subject.
+// Inherits all restrictions of the authenticating PAT, if any.
+// The token cannot outlive that PAT. JWT tokens expire within seven days;
+// named PV1 tokens expire within 365 days and appear in the user's token list..
+func (c *Client) CreatePAT(ctx context.Context, body *CreatePATRequestInput) (*CreatePATResponse, *Response, error) {
+	if body == nil {
+		err := fmt.Errorf("sourcecraft: body is required for CreatePAT")
+		return nil, nil, err
+	}
+	path, err := expandPath("/user/pats")
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[CreatePATResponse](ctx, c, http.MethodPost, path, nil, body)
+}
+
+// RevokePATs calls POST /user/pats/revoke.
+// Revoke all PATs for the authenticated subject whose inherited issuance time
+// is at or before a cutoff, including descendants. Requires IAM authentication.
+// The cutoff only moves forward; previously revoked tokens stay revoked..
+func (c *Client) RevokePATs(ctx context.Context, body *RevokePATsRequest) (*RevokePATsResponse, *Response, error) {
+	if body == nil {
+		err := fmt.Errorf("sourcecraft: body is required for RevokePATs")
+		return nil, nil, err
+	}
+	path, err := expandPath("/user/pats/revoke")
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[RevokePATsResponse](ctx, c, http.MethodPost, path, nil, body)
 }
 
 // GetProfileByCloudID calls GET /users/cloud-id:{cloud_id}.

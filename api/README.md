@@ -2,9 +2,9 @@
 
 [English](README.md) · [Русский](README.ru.md)
 
-`sourcecraft.swagger.json` is a snapshot of the official SourceCraft public REST API specification, downloaded on November 4, 2026 from the [Swagger endpoint](https://api.sourcecraft.tech/sourcecraft.swagger.json). See the [API and authentication guide](https://sourcecraft.dev/portal/docs/en/sourcecraft/operations/api-start) for access details.
+`sourcecraft.swagger.json` is a snapshot of the official SourceCraft public REST API specification, downloaded on November 12, 2026 from the [Swagger endpoint](https://api.sourcecraft.tech/sourcecraft.swagger.json). See the [API and authentication guide](https://sourcecraft.dev/portal/docs/en/sourcecraft/operations/api-start) for access details.
 
-The document version is `0.0.1`. That version alone does not identify its operation set: the SDK is pinned to the saved file. The current snapshot contains 268 operations and 282 model definitions, including event models. Operations tagged `Withdrawn` are retained for compatibility and marked `Deprecated`.
+The document version is `0.0.1`. That version alone does not identify its operation set: the SDK is pinned to the saved file. The current snapshot contains 272 operations and 288 model definitions, including event models. Operations tagged `Withdrawn` are retained for compatibility and marked `Deprecated`.
 
 The generator supports multipart `requestBody` even though the main document uses Swagger 2.0. Attaching a release asset by tag requires a separate `name` field.
 
@@ -20,7 +20,7 @@ Building and generating the SDK require Go 1.26 or later. With a compatible tool
 
 ## AppSec OpenAPI
 
-`appsec.openapi.json` is the official JSON snapshot of the separate AppSec security API, using OpenAPI 3.1.0. It was downloaded on November 4, 2026. The [AppSec endpoint](https://appsec.sourcecraft.tech/openapi) returns JSON with `Accept: application/json` and YAML without that header. The snapshot contains 27 operations and 66 model definitions and is saved without content conversion.
+`appsec.openapi.json` is the official JSON snapshot of the separate AppSec security API, using OpenAPI 3.1.0. It was downloaded on November 12, 2026. The [AppSec endpoint](https://appsec.sourcecraft.tech/openapi) returns JSON with `Accept: application/json` and YAML without that header. The snapshot contains 31 operations and 72 model definitions and is saved without content conversion.
 
 Update AppSec explicitly:
 
@@ -37,7 +37,7 @@ The compiler supports nullable model properties, property-level `anyOf` with `nu
 
 Generation rejects a nullable response as a whole, a dictionary at the root of a model definition, and incompatible success responses for one method, such as typed JSON for `200` with no body for `202`. These constructs need separate support. Report uploads declare untyped JSON for `200` and an empty `202`; both are supported. Regression tests verify that unsupported changes fail before files are written.
 
-AppSec tests read the pinned specification independently, call all 27 methods, and check all 66 models, nullable fields, numeric precision, and both report-upload statuses (`200` and `202`). Additional small OpenAPI fixtures compile as independent Go packages. Tests do not call the authenticated live API.
+AppSec tests read the pinned specification independently, call all 31 methods, and check all 72 models, nullable fields, numeric precision, and both report-upload statuses (`200` and `202`). Additional small OpenAPI fixtures compile as independent Go packages. Tests do not call the authenticated live API.
 
 ## Platform Swagger compiler
 
@@ -57,7 +57,7 @@ Canonical platform models follow the explicit policy in `internal/generate/platf
 
 When request usage needs pointers to distinguish omitted fields from zero values, the compiler creates a separate `<Model>Input` projection. Projections propagate through nested objects, arrays, dictionaries, and cyclic references. New methods accept the input projection, while responses use the canonical model. For example, adding a method with a `Branch` body creates `BranchInput.Name *string` and preserves `Branch.Name string`. A projection name that collides with an existing declaration is rejected before writing files. AppSec uses its own stable rules.
 
-The [public-api.golden](public-api.golden) snapshot records 1149 public API entries across both clients: types, exported fields and their order and tags, signatures and methods, exact constant values, aliases, and type-parameter constraints. It includes accessible fields and methods exposed through embedding or aliases, including private embedded types. It also checks comparability: changing a private field can make a public type unusable with `==` or as a map key. Argument names, including nested callback arguments, documentation, and private fields alone are not treated as public contracts.
+The [public-api.golden](public-api.golden) snapshot records 1183 public API entries across both clients: types, exported fields and their order and tags, signatures and methods, exact constant values, aliases, and type-parameter constraints. It includes accessible fields and methods exposed through embedding or aliases, including private embedded types. It also checks comparability: changing a private field can make a public type unusable with `==` or as a map key. Argument names, including nested callback arguments, documentation, and private fields alone are not treated as public contracts.
 
 Run the compatibility check:
 

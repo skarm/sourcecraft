@@ -273,6 +273,98 @@ func (c *AppSecClient) ReportPullRequest(ctx context.Context, runUUID string, bo
 	return doJSON[AppSecFixRunPullRequestResponse](ctx, c.transport(), "POST", path, opts, body)
 }
 
+// AppSecListArtifactsOptions contains query parameters for the AppSec API.
+type AppSecListArtifactsOptions struct {
+	// Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).
+	GitRepo string
+	// Page size, from 1 to 250. Default: 50.
+	// The zero value uses the API default: 50.
+	PageSize int32
+	// Omit for the first page. Use nextPageToken from the response for subsequent pages, keeping all other parameters unchanged. An empty nextPageToken means the last page.
+	// The zero value uses the API default: "".
+	PageToken string
+	// Latest-scan selection: SCAN_TYPE_DEFAULT (default), SCAN_TYPE_AUDIT or SCAN_TYPE_CLOUD_DAST.
+	// The zero value uses the API default: "".
+	ScanType string
+	// Scan UUID to select. Omit or leave blank to use the repository's latest scan. Scan UUIDs can be obtained from the scan listing endpoints.
+	// The zero value uses the API default: "".
+	ScanUUID string
+	// Engine type: UNSPECIFIED (all), SECRETS, SCA, SAST, SBOM_SPDX, SBOM_CYCLONEDX, DAST or AI_AUDIT.
+	// The zero value uses the API default: "".
+	Type string
+}
+
+func (o *AppSecListArtifactsOptions) queryValues() (url.Values, error) {
+	q := make(url.Values)
+	if o == nil {
+		return nil, fmt.Errorf("sourcecraft: AppSec query options are required")
+	}
+	if strings.TrimSpace(string(o.GitRepo)) == "" {
+		return nil, fmt.Errorf("sourcecraft: AppSec query parameter gitRepo is required")
+	}
+	q.Set("gitRepo", string(o.GitRepo))
+	valuePageSize := o.PageSize
+	if valuePageSize == 0 {
+		valuePageSize = 50
+	}
+	if valuePageSize < 1 {
+		return nil, fmt.Errorf("sourcecraft: AppSec query parameter pageSize is below its minimum")
+	}
+	if valuePageSize > 250 {
+		return nil, fmt.Errorf("sourcecraft: AppSec query parameter pageSize exceeds its maximum")
+	}
+	q.Set("pageSize", strconv.FormatInt(int64(valuePageSize), 10))
+	q.Set("pageToken", string(o.PageToken))
+	q.Set("scanType", string(o.ScanType))
+	q.Set("scanUuid", string(o.ScanUUID))
+	q.Set("type", string(o.Type))
+	return q, nil
+}
+
+// ListArtifacts calls GET /v1/artifacts.
+// List scan artifacts with presigned download URLs.
+func (c *AppSecClient) ListArtifacts(ctx context.Context, opts *AppSecListArtifactsOptions) (*AppSecPaginatedResponseArtifactDownloadDTO, *Response, error) {
+	path, err := expandPath("/v1/artifacts")
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[AppSecPaginatedResponseArtifactDownloadDTO](ctx, c.transport(), "GET", path, opts, nil)
+}
+
+// AppSecGetArtifactPresignedURLsOptions contains query parameters for the AppSec API.
+type AppSecGetArtifactPresignedURLsOptions struct {
+	// Commit hash whose scan artifacts to download
+	CommitHash string
+	// Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).
+	GitRepo string
+}
+
+func (o *AppSecGetArtifactPresignedURLsOptions) queryValues() (url.Values, error) {
+	q := make(url.Values)
+	if o == nil {
+		return nil, fmt.Errorf("sourcecraft: AppSec query options are required")
+	}
+	if strings.TrimSpace(string(o.CommitHash)) == "" {
+		return nil, fmt.Errorf("sourcecraft: AppSec query parameter commitHash is required")
+	}
+	q.Set("commitHash", string(o.CommitHash))
+	if strings.TrimSpace(string(o.GitRepo)) == "" {
+		return nil, fmt.Errorf("sourcecraft: AppSec query parameter gitRepo is required")
+	}
+	q.Set("gitRepo", string(o.GitRepo))
+	return q, nil
+}
+
+// GetArtifactPresignedURLs calls GET /v1/artifacts/presigned-urls.
+// Get presigned S3 URLs for a commit's artifacts.
+func (c *AppSecClient) GetArtifactPresignedURLs(ctx context.Context, opts *AppSecGetArtifactPresignedURLsOptions) (*AppSecArtifactPresignedURLsDTO, *Response, error) {
+	path, err := expandPath("/v1/artifacts/presigned-urls")
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[AppSecArtifactPresignedURLsDTO](ctx, c.transport(), "GET", path, opts, nil)
+}
+
 // AppSecListDefectGroupsOptions contains query parameters for the AppSec API.
 type AppSecListDefectGroupsOptions struct {
 	// Case-insensitive substring of the rule's full description (the vulnerability description for SCA). If empty/omitted: all rules.
@@ -722,6 +814,34 @@ func (c *AppSecClient) ListFindings(ctx context.Context, opts *AppSecListFinding
 	return doJSON[AppSecPaginatedResponseFinding](ctx, c.transport(), "GET", path, opts, nil)
 }
 
+// AppSecListFindingCodeFlowStepsOptions contains query parameters for the AppSec API.
+type AppSecListFindingCodeFlowStepsOptions struct {
+	// Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).
+	GitRepo string
+}
+
+func (o *AppSecListFindingCodeFlowStepsOptions) queryValues() (url.Values, error) {
+	q := make(url.Values)
+	if o == nil {
+		return nil, fmt.Errorf("sourcecraft: AppSec query options are required")
+	}
+	if strings.TrimSpace(string(o.GitRepo)) == "" {
+		return nil, fmt.Errorf("sourcecraft: AppSec query parameter gitRepo is required")
+	}
+	q.Set("gitRepo", string(o.GitRepo))
+	return q, nil
+}
+
+// ListFindingCodeFlowSteps calls GET /v1/findings/{findingUuid}/code-flow.
+// List a finding's SAST code-flow steps.
+func (c *AppSecClient) ListFindingCodeFlowSteps(ctx context.Context, findingUUID string, opts *AppSecListFindingCodeFlowStepsOptions) (*AppSecCodeFlowStepsResponse, *Response, error) {
+	path, err := expandPath("/v1/findings/{findingUuid}/code-flow", pathParam{"findingUuid", findingUUID})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[AppSecCodeFlowStepsResponse](ctx, c.transport(), "GET", path, opts, nil)
+}
+
 // AppSecGenerateReportOptions contains query parameters for the AppSec API.
 type AppSecGenerateReportOptions struct {
 	// For SARIF: engine slice to generate — UNSPECIFIED (default) for the combined report, or SECRETS/SCA/SAST/DAST for a per-engine report. Ignored for PDF.
@@ -1050,6 +1170,38 @@ func (o *AppSecGetLatestScanOptions) queryValues() (url.Values, error) {
 // Get Latest Scan.
 func (c *AppSecClient) GetLatestScan(ctx context.Context, opts *AppSecGetLatestScanOptions) (*AppSecScanSummaryDTO, *Response, error) {
 	path, err := expandPath("/v1/scans/latest")
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[AppSecScanSummaryDTO](ctx, c.transport(), "GET", path, opts, nil)
+}
+
+// AppSecGetLatestRunningScanOptions contains query parameters for the AppSec API.
+type AppSecGetLatestRunningScanOptions struct {
+	// Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).
+	GitRepo string
+	// Scan type: SCAN_TYPE_DEFAULT (default), SCAN_TYPE_AUDIT or SCAN_TYPE_CLOUD_DAST. Omit or leave blank for SCAN_TYPE_DEFAULT. Names are case-sensitive.
+	// The zero value uses the API default: "".
+	ScanType string
+}
+
+func (o *AppSecGetLatestRunningScanOptions) queryValues() (url.Values, error) {
+	q := make(url.Values)
+	if o == nil {
+		return nil, fmt.Errorf("sourcecraft: AppSec query options are required")
+	}
+	if strings.TrimSpace(string(o.GitRepo)) == "" {
+		return nil, fmt.Errorf("sourcecraft: AppSec query parameter gitRepo is required")
+	}
+	q.Set("gitRepo", string(o.GitRepo))
+	q.Set("scanType", string(o.ScanType))
+	return q, nil
+}
+
+// GetLatestRunningScan calls GET /v1/scans/latest-running.
+// Get the latest running scan of the requested type.
+func (c *AppSecClient) GetLatestRunningScan(ctx context.Context, opts *AppSecGetLatestRunningScanOptions) (*AppSecScanSummaryDTO, *Response, error) {
+	path, err := expandPath("/v1/scans/latest-running")
 	if err != nil {
 		return nil, nil, err
 	}

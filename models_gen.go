@@ -396,6 +396,46 @@ type CreateOrganizationInvitesOperationResult struct {
 	Invites []Invite `json:"invites,omitzero"`
 }
 
+// CreatePATRequest is the API model for CreatePATRequest.
+type CreatePATRequest struct {
+	// Required. Must be in the future, at most seven days (JWT) or 365 days (PV1)
+	// from now, and no later than the expiration of the authenticating PAT.
+	// Eternal tokens are not supported. Precision is rounded down to seconds.
+	ExpiresAt time.Time `json:"expires_at"`
+	// Required for PV1. The display name in the user's token list.
+	// Optional for JWT; JWT tokens do not appear in that list.
+	Name string `json:"name,omitzero"`
+	// Optional restrictions, applied in addition to the caller's own permissions.
+	// Omitted restrictions are inherited from the authenticating PAT, if any.
+	// Requests that expand that PAT's object or role scope are rejected.
+	Scope *CreatePATRequestScope `json:"scope,omitzero"`
+	// Defaults to jwt. PV1 tokens are persisted and individually revocable through
+	// the user's token settings. PV1 issuance does not support authenticating PATs
+	// with CI/CD, CodeAssist or delegated restrictions.
+	Type TokenType `json:"type,omitzero"`
+}
+
+// CreatePATRequestScope is the API model for CreatePATRequest.Scope.
+type CreatePATRequestScope struct {
+	// Public UUIDs of repositories to which the PAT is restricted (at most 100).
+	// Empty means inherit the parent's objects, or all accessible repositories
+	// when authenticating with IAM. Public repositories remain anonymously
+	// readable unless the parent PAT disables anonymous-public access.
+	RepoIDs []string `json:"repo_ids,omitzero"`
+	// Maximum repository role. Does not grant permissions the caller lacks.
+	// If omitted, inherits the parent PAT's role cap, or applies no role cap
+	// when authenticating with IAM.
+	Role RepoRole `json:"role,omitzero"`
+}
+
+// CreatePATResponse is the API model for CreatePATResponse.
+type CreatePATResponse struct {
+	ExpiresAt *time.Time `json:"expires_at,omitzero"`
+	// Credential. Returned only on creation.
+	Token string    `json:"token,omitzero"`
+	Type  TokenType `json:"type,omitzero"`
+}
+
 // CreateProjectBody is the API model for CreateProjectBody.
 type CreateProjectBody struct {
 	Description *string            `json:"description,omitzero"`
@@ -1542,6 +1582,8 @@ type Progress struct {
 
 // Project is the API model for Project.
 type Project struct {
+	// ID of the YC cloud connected to this project. Absent for ordinary projects.
+	CloudID      string                `json:"cloud_id,omitzero"`
 	CreatedAt    *time.Time            `json:"created_at,omitzero"`
 	Description  string                `json:"description,omitzero"`
 	ID           string                `json:"id,omitzero"`
@@ -2235,6 +2277,21 @@ type ReviewRule struct {
 	Reviewers []UserEmbedded `json:"reviewers,omitzero"`
 }
 
+// RevokePATsRequest is the API model for RevokePATsRequest.
+type RevokePATsRequest struct {
+	// Inclusive inherited-issuance cutoff. Defaults to the server's current time.
+	// Must not be in the future. Applies to JWT and PV1 tokens from both public
+	// and private APIs, including service and CodeAssist tokens.
+	IssuedBefore *time.Time `json:"issued_before,omitzero"`
+}
+
+// RevokePATsResponse is the API model for RevokePATsResponse.
+type RevokePATsResponse struct {
+	// Effective inclusive cutoff, which can be later than requested if an earlier
+	// revocation already advanced it.
+	IssuedBefore *time.Time `json:"issued_before,omitzero"`
+}
+
 // Run Run represents an instance of CI/CD run which may contain several workflow launches.
 //
 // When Run is in `created` status, it is still in preparation for startup and can contain no workflows.
@@ -2505,6 +2562,14 @@ type Timezone struct {
 	IanaTimezone string `json:"iana_timezone,omitzero"`
 }
 
+// TokenType is the API model for TokenType.
+type TokenType string
+
+const (
+	TokenTypeJwt TokenType = "jwt"
+	TokenTypePv1 TokenType = "pv1"
+)
+
 // TransferCodeAssistWorkplaceBody is the API model for TransferCodeAssistWorkplaceBody.
 type TransferCodeAssistWorkplaceBody struct {
 	OccupyUserID *string `json:"occupy_user_id,omitzero"`
@@ -2763,4 +2828,36 @@ type Tag struct {
 	// For annotated tags: hash of the tag object
 	// For lightweight tags: hash of the commit
 	Target string `json:"target,omitzero"`
+}
+
+// CreatePATRequestInput is the request projection of CreatePATRequest.
+type CreatePATRequestInput struct {
+	// Required. Must be in the future, at most seven days (JWT) or 365 days (PV1)
+	// from now, and no later than the expiration of the authenticating PAT.
+	// Eternal tokens are not supported. Precision is rounded down to seconds.
+	ExpiresAt time.Time `json:"expires_at"`
+	// Required for PV1. The display name in the user's token list.
+	// Optional for JWT; JWT tokens do not appear in that list.
+	Name *string `json:"name,omitzero"`
+	// Optional restrictions, applied in addition to the caller's own permissions.
+	// Omitted restrictions are inherited from the authenticating PAT, if any.
+	// Requests that expand that PAT's object or role scope are rejected.
+	Scope *CreatePATRequestScopeInput `json:"scope,omitzero"`
+	// Defaults to jwt. PV1 tokens are persisted and individually revocable through
+	// the user's token settings. PV1 issuance does not support authenticating PATs
+	// with CI/CD, CodeAssist or delegated restrictions.
+	Type *TokenType `json:"type,omitzero"`
+}
+
+// CreatePATRequestScopeInput is the request projection of CreatePATRequestScope.
+type CreatePATRequestScopeInput struct {
+	// Public UUIDs of repositories to which the PAT is restricted (at most 100).
+	// Empty means inherit the parent's objects, or all accessible repositories
+	// when authenticating with IAM. Public repositories remain anonymously
+	// readable unless the parent PAT disables anonymous-public access.
+	RepoIDs []string `json:"repo_ids,omitzero"`
+	// Maximum repository role. Does not grant permissions the caller lacks.
+	// If omitted, inherits the parent PAT's role cap, or applies no role cap
+	// when authenticating with IAM.
+	Role *RepoRole `json:"role,omitzero"`
 }

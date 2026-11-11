@@ -394,6 +394,10 @@ func appsecMethod(endpoint string) string {
 		return "ChangeRepositoryStatuses"
 	case "post /v1/ai/fix-runs/{runUuid}/pull-request":
 		return "ReportPullRequest"
+	case "get /v1/artifacts":
+		return "ListArtifacts"
+	case "get /v1/artifacts/presigned-urls":
+		return "GetArtifactPresignedURLs"
 	case "get /v1/defect-groups":
 		return "ListDefectGroups"
 	case "get /v1/defect-groups/by-link":
@@ -414,6 +418,8 @@ func appsecMethod(endpoint string) string {
 		return "ListDependencies"
 	case "get /v1/findings":
 		return "ListFindings"
+	case "get /v1/findings/{findingUuid}/code-flow":
+		return "ListFindingCodeFlowSteps"
 	case "post /v1/reports/generate":
 		return "GenerateReport"
 	case "get /v1/reports/operations/{operationUuid}":
@@ -428,6 +434,8 @@ func appsecMethod(endpoint string) string {
 		return "ListScans"
 	case "get /v1/scans/latest":
 		return "GetLatestScan"
+	case "get /v1/scans/latest-running":
+		return "GetLatestRunningScan"
 	case "post /v1/scans/sca":
 		return "StartSCAScan"
 	case "get /v1/scans/{scanUuid}":

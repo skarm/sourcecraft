@@ -5151,6 +5151,44 @@
         ]
       }
     },
+    "/releases/id:{release_id}/attachments/{attachment_id}": {
+      "get": {
+        "summary": "Get release attachment (By Release ID)",
+        "description": "Gets release attachment details and an unauthenticated presigned download URL that is valid for approximately one\nminute; start the download immediately after the call. `attachment_id` must be `ReleaseAsset.attachment.id`, not\n`ReleaseAsset.id`, and the release asset must be backed by an attachment.",
+        "operationId": "GetReleaseAttachmentByID",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/AttachmentDownloadable"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "release_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "attachment_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Releases | Attachments"
+        ]
+      }
+    },
     "/releases/id:{release_id}/discard": {
       "post": {
         "summary": "Discard Release (By ID)",
@@ -10506,6 +10544,56 @@
         ]
       }
     },
+    "/repos/{org_slug}/{repo_slug}/releases/tag/{release_tag}/attachments/{attachment_id}": {
+      "get": {
+        "summary": "Get release attachment",
+        "description": "Gets release attachment details and an unauthenticated presigned download URL that is valid for approximately one\nminute; start the download immediately after the call. `attachment_id` must be `ReleaseAsset.attachment.id`, not\n`ReleaseAsset.id`, and the release asset must be backed by an attachment.",
+        "operationId": "GetReleaseAttachment",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/AttachmentDownloadable"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "org_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "repo_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "release_tag",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "attachment_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Releases | Attachments"
+        ]
+      }
+    },
     "/repos/{org_slug}/{repo_slug}/releases/tag/{release_tag}/discard": {
       "post": {
         "summary": "Discard Release (By Tag)",
@@ -11261,6 +11349,72 @@
         },
         "tags": [
           "User"
+        ]
+      }
+    },
+    "/user/pats": {
+      "post": {
+        "summary": "Issue a personal access token for the authenticated subject.\nInherits all restrictions of the authenticating PAT, if any.\nThe token cannot outlive that PAT. JWT tokens expire within seven days;\nnamed PV1 tokens expire within 365 days and appear in the user's token list.",
+        "operationId": "CreatePAT",
+        "responses": {
+          "201": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/CreatePATResponse"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreatePATRequest"
+            }
+          }
+        ],
+        "tags": [
+          "User | Personal access tokens"
+        ]
+      }
+    },
+    "/user/pats/revoke": {
+      "post": {
+        "summary": "Revoke all PATs for the authenticated subject whose inherited issuance time\nis at or before a cutoff, including descendants. Requires IAM authentication.\nThe cutoff only moves forward; previously revoked tokens stay revoked.",
+        "operationId": "RevokePATs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/RevokePATsResponse"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RevokePATsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "User | Personal access tokens"
         ]
       }
     },
@@ -12874,6 +13028,63 @@
             "$ref": "#/definitions/InviteError"
           },
           "description": "Per-invite errors. Each error identifies which invitee failed and why."
+        }
+      }
+    },
+    "CreatePATRequest": {
+      "type": "object",
+      "properties": {
+        "expires_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Required. Must be in the future, at most seven days (JWT) or 365 days (PV1)\nfrom now, and no later than the expiration of the authenticating PAT.\nEternal tokens are not supported. Precision is rounded down to seconds."
+        },
+        "type": {
+          "$ref": "#/definitions/TokenType",
+          "description": "Defaults to jwt. PV1 tokens are persisted and individually revocable through\nthe user's token settings. PV1 issuance does not support authenticating PATs\nwith CI/CD, CodeAssist or delegated restrictions."
+        },
+        "name": {
+          "type": "string",
+          "description": "Required for PV1. The display name in the user's token list.\nOptional for JWT; JWT tokens do not appear in that list."
+        },
+        "scope": {
+          "$ref": "#/definitions/CreatePATRequest.Scope",
+          "description": "Optional restrictions, applied in addition to the caller's own permissions.\nOmitted restrictions are inherited from the authenticating PAT, if any.\nRequests that expand that PAT's object or role scope are rejected."
+        }
+      },
+      "required": [
+        "expires_at"
+      ]
+    },
+    "CreatePATRequest.Scope": {
+      "type": "object",
+      "properties": {
+        "role": {
+          "$ref": "#/definitions/RepoRole",
+          "description": "Maximum repository role. Does not grant permissions the caller lacks.\nIf omitted, inherits the parent PAT's role cap, or applies no role cap\nwhen authenticating with IAM."
+        },
+        "repo_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Public UUIDs of repositories to which the PAT is restricted (at most 100).\nEmpty means inherit the parent's objects, or all accessible repositories\nwhen authenticating with IAM. Public repositories remain anonymously\nreadable unless the parent PAT disables anonymous-public access."
+        }
+      }
+    },
+    "CreatePATResponse": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string",
+          "description": "Credential. Returned only on creation."
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "type": {
+          "$ref": "#/definitions/TokenType"
         }
       }
     },
@@ -15072,6 +15283,10 @@
         "updated_at": {
           "type": "string",
           "format": "date-time"
+        },
+        "cloud_id": {
+          "type": "string",
+          "description": "ID of the YC cloud connected to this project. Absent for ordinary projects."
         }
       }
     },
@@ -16348,6 +16563,26 @@
         }
       }
     },
+    "RevokePATsRequest": {
+      "type": "object",
+      "properties": {
+        "issued_before": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Inclusive inherited-issuance cutoff. Defaults to the server's current time.\nMust not be in the future. Applies to JWT and PV1 tokens from both public\nand private APIs, including service and CodeAssist tokens."
+        }
+      }
+    },
+    "RevokePATsResponse": {
+      "type": "object",
+      "properties": {
+        "issued_before": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Effective inclusive cutoff, which can be later than requested if an earlier\nrevocation already advanced it."
+        }
+      }
+    },
     "Run": {
       "type": "object",
       "properties": {
@@ -16785,6 +17020,13 @@
           "type": "string"
         }
       }
+    },
+    "TokenType": {
+      "type": "string",
+      "enum": [
+        "jwt",
+        "pv1"
+      ]
     },
     "TransferCodeAssistWorkplaceBody": {
       "type": "object",
