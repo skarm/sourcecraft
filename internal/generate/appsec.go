@@ -306,10 +306,11 @@ func (g *appsecGenerator) options(b *bytes.Buffer, name string, params []openAPI
 func (g *appsecGenerator) methods() []byte {
 	b := appsecPreamble(`"context"; "encoding/json"; "fmt"; "net/http"; "net/url"; "strconv"; "strings"`)
 	seen := map[string]bool{}
+	names := appsecMethodNames()
 
 	for _, path := range slices.Sorted(maps.Keys(g.spec.Paths)) {
 		for _, method := range slices.Sorted(maps.Keys(g.spec.Paths[path])) {
-			g.method(b, path, method, seen)
+			g.method(b, path, method, names[method+" "+path], seen)
 		}
 	}
 
@@ -376,73 +377,40 @@ func appsecVariable(name string) string {
 }
 
 // Keep these names stable even if a documentation summary is reworded.
-func appsecMethod(endpoint string) string {
-	switch endpoint {
-	case "get /v1/activities":
-		return "ListActivities"
-	case "post /v1/activities/comment":
-		return "CreateComment"
-	case "patch /v1/activities/comment/{activityUuid}":
-		return "UpdateComment"
-	case "delete /v1/activities/comment/{activityUuid}":
-		return "DeleteComment"
-	case "get /v1/activities/{activityUuid}":
-		return "GetActivity"
-	case "get /v1/admin/repository-statuses":
-		return "GetRepositoryStatuses"
-	case "post /v1/admin/repository-statuses":
-		return "ChangeRepositoryStatuses"
-	case "post /v1/ai/fix-runs/{runUuid}/pull-request":
-		return "ReportPullRequest"
-	case "get /v1/artifacts":
-		return "ListArtifacts"
-	case "get /v1/artifacts/presigned-urls":
-		return "GetArtifactPresignedURLs"
-	case "get /v1/defect-groups":
-		return "ListDefectGroups"
-	case "get /v1/defect-groups/by-link":
-		return "ListDefectGroupsByLink"
-	case "post /v1/defect-groups/links/batch":
-		return "AddBatchDefectGroupsLinks"
-	case "post /v1/defect-groups/status/batch":
-		return "SetBatchDefectGroupsStatus"
-	case "post /v1/defect-groups/ticket-url/batch":
-		return "SetBatchDefectGroupsTicketURL"
-	case "get /v1/defect-groups/types":
-		return "ListEngineTypes"
-	case "get /v1/defect-groups/{publicId}":
-		return "GetDefectGroup"
-	case "get /v1/defect-groups/{publicId}/allowed-transitions":
-		return "GetAllowedTransitions"
-	case "get /v1/dependencies":
-		return "ListDependencies"
-	case "get /v1/findings":
-		return "ListFindings"
-	case "get /v1/findings/{findingUuid}/code-flow":
-		return "ListFindingCodeFlowSteps"
-	case "post /v1/reports/generate":
-		return "GenerateReport"
-	case "get /v1/reports/operations/{operationUuid}":
-		return "GetReportOperation"
-	case "get /v1/reports/presigned-url":
-		return "GetReportURL"
-	case "post /v1/reports/upload":
-		return "UploadReport"
-	case "get /v1/repositories":
-		return "ListRepositories"
-	case "get /v1/scans":
-		return "ListScans"
-	case "get /v1/scans/latest":
-		return "GetLatestScan"
-	case "get /v1/scans/latest-running":
-		return "GetLatestRunningScan"
-	case "post /v1/scans/sca":
-		return "StartSCAScan"
-	case "get /v1/scans/{scanUuid}":
-		return "GetScan"
+func appsecMethodNames() map[string]string {
+	return map[string]string{
+		"get /v1/activities":                                   "ListActivities",
+		"post /v1/activities/comment":                          "CreateComment",
+		"patch /v1/activities/comment/{activityUuid}":          "UpdateComment",
+		"delete /v1/activities/comment/{activityUuid}":         "DeleteComment",
+		"get /v1/activities/{activityUuid}":                    "GetActivity",
+		"get /v1/admin/repository-statuses":                    "GetRepositoryStatuses",
+		"post /v1/admin/repository-statuses":                   "ChangeRepositoryStatuses",
+		"post /v1/ai/fix-runs/{runUuid}/pull-request":          "ReportPullRequest",
+		"get /v1/artifacts":                                    "ListArtifacts",
+		"get /v1/artifacts/presigned-urls":                     "GetArtifactPresignedURLs",
+		"get /v1/defect-groups":                                "ListDefectGroups",
+		"get /v1/defect-groups/by-link":                        "ListDefectGroupsByLink",
+		"post /v1/defect-groups/links/batch":                   "AddBatchDefectGroupsLinks",
+		"post /v1/defect-groups/status/batch":                  "SetBatchDefectGroupsStatus",
+		"post /v1/defect-groups/ticket-url/batch":              "SetBatchDefectGroupsTicketURL",
+		"get /v1/defect-groups/types":                          "ListEngineTypes",
+		"get /v1/defect-groups/{publicId}":                     "GetDefectGroup",
+		"get /v1/defect-groups/{publicId}/allowed-transitions": "GetAllowedTransitions",
+		"get /v1/dependencies":                                 "ListDependencies",
+		"get /v1/findings":                                     "ListFindings",
+		"get /v1/findings/{findingUuid}/code-flow":             "ListFindingCodeFlowSteps",
+		"post /v1/reports/generate":                            "GenerateReport",
+		"get /v1/reports/operations/{operationUuid}":           "GetReportOperation",
+		"get /v1/reports/presigned-url":                        "GetReportURL",
+		"post /v1/reports/upload":                              "UploadReport",
+		"get /v1/repositories":                                 "ListRepositories",
+		"get /v1/scans":                                        "ListScans",
+		"post /v1/scans/dast":                                  "StartDASTScan",
+		"get /v1/scans/latest":                                 "GetLatestScan",
+		"post /v1/scans/sca":                                   "StartSCAScan",
+		"get /v1/scans/{scanUuid}":                             "GetScan",
 	}
-
-	return ""
 }
 
 func (g *appsecGenerator) unwrapAllOf(s *openAPISchema) (*openAPISchema, bool) {
@@ -535,6 +503,11 @@ func (g *appsecGenerator) model(b *bytes.Buffer, name string, names map[string]b
 
 		if name == "ReportUploadForm" && field == nameFile {
 			fieldType, tag = "*Upload", "-"
+		}
+
+		if name == "ReportUploadForm" && field == "engineName" && fieldType == "*string" {
+			// Keep the existing Go field. An empty string omits the multipart part.
+			fieldType, tag = typeString, field
 		}
 
 		fmt.Fprintf(b, "%s %s `json:%q`\n", fieldName, fieldType, tag)
@@ -644,16 +617,14 @@ func (g *appsecGenerator) optionValue(b *bytes.Buffer, p openAPIParameter) {
 	}
 }
 
-func (g *appsecGenerator) method(b *bytes.Buffer, path, method string, seen map[string]bool) {
-	op := g.spec.Paths[path][method]
-
-	name := appsecMethod(method + " " + path)
+func (g *appsecGenerator) method(b *bytes.Buffer, path, method, name string, seen map[string]bool) {
 	if name == "" || seen[name] {
 		panic("unknown or duplicate AppSec endpoint: " + method + " " + path)
 	}
 
 	seen[name] = true
 
+	op := g.spec.Paths[path][method]
 	pathParams, query := appsecParameters(op)
 
 	options := "AppSec" + name + "Options"
@@ -852,12 +823,23 @@ func (g *appsecGenerator) multipartField(b *bytes.Buffer, form *openAPISchema, f
 	value := "body." + goName(field)
 
 	required := slices.Contains(form.Required, field)
+	base, _ := g.unwrapSchema(p)
+
+	if field == "engineName" && !required && g.kind(base) == typeString {
+		fmt.Fprintln(b, `if strings.TrimSpace(body.EngineName) != "" {
+fields = append(fields, formField{"engineName", body.EngineName})
+} else if body.ReportType != AppSecReportUploadFormReportTypeSarif {
+return nil, fmt.Errorf("sourcecraft: multipart field engineName is required for reports other than SARIF")
+}`)
+
+		return
+	}
+
 	if !required {
 		fmt.Fprintf(b, "if %s != nil {\n", value)
 		value = "*" + value
 	}
 
-	base, _ := g.unwrapSchema(p)
 	switch g.kind(base) {
 	case typeString:
 		if required {

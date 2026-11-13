@@ -4,7 +4,7 @@
 
 A Go client for the SourceCraft REST API: repositories, issues, pull requests, CI/CD, and code security through AppSec. Requires **Go 1.26 or later**. No external dependencies.
 
-`Client` covers 272 platform operations, and `AppSecClient` covers 31 security API operations. Methods and models are generated from [pinned specifications](api/README.md) captured on November 12, 2026.
+`Client` covers 295 platform operations, and `AppSecClient` covers 31 security API operations. Methods and models are generated from [pinned specifications](api/README.md) captured on November 13, 2026.
 
 ## Installation
 

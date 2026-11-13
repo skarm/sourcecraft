@@ -19,6 +19,220 @@
     "application/json"
   ],
   "paths": {
+    "/invite-multilinks/id:{link_id}": {
+      "get": {
+        "summary": "Get Multi-Link (By Multi-Link ID)",
+        "operationId": "GetMultiLinkByID",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MultiLink"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "link_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks"
+        ]
+      },
+      "delete": {
+        "summary": "Delete Multi-Link (By Multi-Link ID)",
+        "description": "Deletes a multi-link asynchronously. Poll operation status at the returned status_url.",
+        "operationId": "DeleteMultiLinkByID",
+        "responses": {
+          "202": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/DeleteMultiLinkOperation"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "link_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks"
+        ]
+      },
+      "patch": {
+        "summary": "Update Multi-Link (By Multi-LinkID)",
+        "operationId": "UpdateMultiLinkByID",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MultiLink"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "link_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateMultiLinkBody"
+            }
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks"
+        ]
+      }
+    },
+    "/invite-multilinks/id:{link_id}/invitees": {
+      "get": {
+        "summary": "List Multi-Link Invitees (By Multi-Link ID)",
+        "operationId": "ListMultiLinkInviteesByID",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ListMultiLinkInviteesResponse"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "link_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "page_size",
+            "description": "The maximum number of invitees to return. The service may return fewer than\nthis value.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "page_token",
+            "description": "A page token, received from a previous call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks"
+        ]
+      },
+      "post": {
+        "summary": "Add Multi-Link Invitees (By Multi-Link ID)",
+        "operationId": "AddMultiLinkInviteesByID",
+        "responses": {
+          "204": {
+            "description": "A successful response."
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "link_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AddMultiLinkInviteesBody"
+            }
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks"
+        ]
+      }
+    },
+    "/invite-multilinks/id:{link_id}/invitees/remove": {
+      "post": {
+        "summary": "Remove Multi-Link Invitees (By Multi-Link ID)",
+        "operationId": "RemoveMultiLinkInviteesByID",
+        "responses": {
+          "204": {
+            "description": "A successful response."
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "link_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RemoveMultiLinkInviteesBody"
+            }
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks"
+        ]
+      }
+    },
     "/issue_comments/id:{issue_comment_id}": {
       "get": {
         "summary": "Get Comment",
@@ -1586,6 +1800,70 @@
         ]
       }
     },
+    "/operations/create-multilink/id:{operation_id}": {
+      "get": {
+        "summary": "Get multi-link creation operation status (By Operation ID)",
+        "operationId": "GetCreateMultiLinkOperationByID",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/CreateMultiLinkOperation"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "operation_id",
+            "description": "Operation ID",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks | Operation"
+        ]
+      }
+    },
+    "/operations/delete-multilink/id:{operation_id}": {
+      "get": {
+        "summary": "Get multi-link deletion operation status (By Operation ID)",
+        "operationId": "GetDeleteMultiLinkOperationByID",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/DeleteMultiLinkOperation"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "operation_id",
+            "description": "Operation ID",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks | Operation"
+        ]
+      }
+    },
     "/operations/merge/id:{operation_id}": {
       "get": {
         "summary": "Get pull request merge operation status (By Operation ID)",
@@ -1615,6 +1893,38 @@
         ],
         "tags": [
           "Repository | PullRequest | Operation"
+        ]
+      }
+    },
+    "/operations/mirroring/id:{operation_id}": {
+      "get": {
+        "summary": "Get repository mirroring operation status (By Operation ID).",
+        "operationId": "GetRepositoryMirroringOperationByID",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/RepositoryMirroringOperation"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "operation_id",
+            "description": "Operation ID.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Repository | Mirroring | Operation"
         ]
       }
     },
@@ -1911,6 +2221,104 @@
         ],
         "tags": [
           "CodeAssistWorkplaces"
+        ]
+      }
+    },
+    "/orgs/id:{org_id}/invite-multilinks": {
+      "get": {
+        "summary": "List Multi-Links for an organization (By Organization ID)",
+        "operationId": "ListMultiLinksByID",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ListMultiLinksResponse"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "repo_slug",
+            "description": "Optional filter: return only multi-links associated with this repository slug",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "repo_id",
+            "description": "Optional filter: return only multi-links associated with this repository ID",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page_size",
+            "description": "The maximum number of multi-links to return. The service may return fewer than\nthis value.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "page_token",
+            "description": "A page token, received from a previous call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks"
+        ]
+      },
+      "post": {
+        "summary": "Create Multi-Link (By Organization ID)",
+        "description": "Creates a multi-link asynchronously. Poll operation status at the returned status_url.",
+        "operationId": "CreateMultiLinkByID",
+        "responses": {
+          "202": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/CreateMultiLinkOperation"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreateMultiLinkBody"
+            }
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks"
         ]
       }
     },
@@ -2811,6 +3219,354 @@
         ],
         "tags": [
           "CodeAssistWorkplaces"
+        ]
+      }
+    },
+    "/orgs/{org_slug}/invite-multilinks": {
+      "get": {
+        "summary": "List Multi-Links for an organization",
+        "operationId": "ListMultiLinks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ListMultiLinksResponse"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "org_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "repo_slug",
+            "description": "Optional filter: return only multi-links associated with this repository slug",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "repo_id",
+            "description": "Optional filter: return only multi-links associated with this repository ID",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page_size",
+            "description": "The maximum number of multi-links to return. The service may return fewer than\nthis value.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "page_token",
+            "description": "A page token, received from a previous call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks"
+        ]
+      },
+      "post": {
+        "summary": "Create Multi-Link",
+        "description": "Creates a multi-link asynchronously. Poll operation status at the returned status_url.",
+        "operationId": "CreateMultiLink",
+        "responses": {
+          "202": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/CreateMultiLinkOperation"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "org_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreateMultiLinkBody"
+            }
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks"
+        ]
+      }
+    },
+    "/orgs/{org_slug}/invite-multilinks/{link_slug}": {
+      "get": {
+        "summary": "Get Multi-Link",
+        "operationId": "GetMultiLink",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MultiLink"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "org_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "link_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks"
+        ]
+      },
+      "delete": {
+        "summary": "Delete Multi-Link",
+        "description": "Deletes a multi-link asynchronously. Poll operation status at the returned status_url.",
+        "operationId": "DeleteMultiLink",
+        "responses": {
+          "202": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/DeleteMultiLinkOperation"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "org_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "link_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks"
+        ]
+      },
+      "patch": {
+        "summary": "Update Multi-Link",
+        "operationId": "UpdateMultiLink",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/MultiLink"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "org_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "link_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateMultiLinkBody"
+            }
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks"
+        ]
+      }
+    },
+    "/orgs/{org_slug}/invite-multilinks/{link_slug}/invitees": {
+      "get": {
+        "summary": "List Multi-Link Invitees",
+        "operationId": "ListMultiLinkInvitees",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ListMultiLinkInviteesResponse"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "org_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "link_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "page_size",
+            "description": "The maximum number of invitees to return. The service may return fewer than\nthis value.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "page_token",
+            "description": "A page token, received from a previous call.\nProvide this to retrieve the subsequent page.\n\nWhen paginating, all other parameters must match\nthe call that provided the page token.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks"
+        ]
+      },
+      "post": {
+        "summary": "Add Multi-Link Invitees",
+        "operationId": "AddMultiLinkInvitees",
+        "responses": {
+          "204": {
+            "description": "A successful response."
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "org_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "link_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AddMultiLinkInviteesBody"
+            }
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks"
+        ]
+      }
+    },
+    "/orgs/{org_slug}/invite-multilinks/{link_slug}/invitees/remove": {
+      "post": {
+        "summary": "Remove Multi-Link Invitees",
+        "operationId": "RemoveMultiLinkInvitees",
+        "responses": {
+          "204": {
+            "description": "A successful response."
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "org_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "link_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RemoveMultiLinkInviteesBody"
+            }
+          }
+        ],
+        "tags": [
+          "Invites | MultiLinks"
         ]
       }
     },
@@ -5993,6 +6749,68 @@
         ]
       }
     },
+    "/repos/id:{repo_id}/mirroring/status": {
+      "get": {
+        "summary": "Get repository mirroring state and rolling quota (By ID).",
+        "operationId": "GetRepositoryMirroringStatusByID",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/RepositoryMirroringStatus"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "repo_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Repository | Mirroring"
+        ]
+      }
+    },
+    "/repos/id:{repo_id}/mirroring/sync": {
+      "post": {
+        "summary": "Trigger one synchronization attempt for an enabled repository mirror (By ID).",
+        "operationId": "TriggerRepositoryMirroringByID",
+        "responses": {
+          "202": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/RepositoryMirroringOperation"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "repo_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Repository | Mirroring"
+        ]
+      }
+    },
     "/repos/id:{repo_id}/pulls": {
       "get": {
         "summary": "List Repository Pull Requests (By Repo ID)",
@@ -8945,6 +9763,80 @@
         ],
         "tags": [
           "Repository | Milestones"
+        ]
+      }
+    },
+    "/repos/{org_slug}/{repo_slug}/mirroring/status": {
+      "get": {
+        "summary": "Get repository mirroring state and rolling quota.",
+        "operationId": "GetRepositoryMirroringStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/RepositoryMirroringStatus"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "org_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "repo_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Repository | Mirroring"
+        ]
+      }
+    },
+    "/repos/{org_slug}/{repo_slug}/mirroring/sync": {
+      "post": {
+        "summary": "Trigger one synchronization attempt for an enabled repository mirror.\nRepeating this request creates another attempt, consumes mirroring quota,\nand can run concurrently with the earlier attempt.",
+        "operationId": "TriggerRepositoryMirroring",
+        "responses": {
+          "202": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/RepositoryMirroringOperation"
+            }
+          },
+          "default": {
+            "description": "Both Client Errors (4xx) and Server Errors (5xx) are serialized into this scheme",
+            "schema": {
+              "$ref": "#/definitions/ApiErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "org_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "repo_slug",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Repository | Mirroring"
         ]
       }
     },
@@ -12262,6 +13154,19 @@
         "cli_ycodex"
       ]
     },
+    "AddMultiLinkInviteesBody": {
+      "type": "object",
+      "properties": {
+        "invitees": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/MultiLinkInvitee"
+          },
+          "description": "Invitees to add to the allow-list. Duplicates are ignored."
+        }
+      }
+    },
     "AddOrganizationRolesBody": {
       "type": "object",
       "properties": {
@@ -12957,6 +13862,80 @@
         "name"
       ]
     },
+    "CreateMultiLinkBody": {
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "title": "Human-readable identifier of the multi-link"
+        },
+        "ttl_in_days": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Time-to-live in days. If unset, the link never expires."
+        },
+        "invitee_count": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Maximum number of invitees who can accept the invitation. Unset means unlimited."
+        },
+        "org_role": {
+          "$ref": "#/definitions/RepoRole",
+          "title": "Organization role granted to invitees upon acceptance. For now supports only repository roles\n(applied to all repositories in organization)"
+        },
+        "repo": {
+          "$ref": "#/definitions/RepoAssignment",
+          "description": "Repository access granted to invitees upon acceptance. Mutually exclusive with project.\nThe caller needs permission to grant the requested repository role:\nsrc.repositories.updateAccessBindings, or src.repositories.manageAdmins for repo_admin."
+        },
+        "restricted_to": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/MultiLinkInvitee"
+          },
+          "title": "If set, only these identities are allowed to accept the invitation"
+        },
+        "team_id": {
+          "type": "string",
+          "description": "IAM group ID of the team users join upon acceptance. Obtain it from\nGET /orgs/{org_slug}/teams. Must belong to this organization. The caller\nmust have permission to manage the team's members."
+        }
+      }
+    },
+    "CreateMultiLinkOperation": {
+      "type": "object",
+      "properties": {
+        "operation_id": {
+          "type": "string",
+          "title": "Operation ID"
+        },
+        "status_url": {
+          "type": "string",
+          "title": "URL to poll for operation status"
+        },
+        "status": {
+          "$ref": "#/definitions/OperationStatus"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when the operation was created"
+        },
+        "modified_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when the operation was last modified"
+        },
+        "response": {
+          "$ref": "#/definitions/MultiLink",
+          "description": "Created multi-link. Present when status is \"success\"."
+        },
+        "error": {
+          "$ref": "#/definitions/OperationError",
+          "description": "Operation-level error. Present when status is \"failed\"."
+        }
+      },
+      "x-ogen-name": "CreateMultiLinkOperationResponse"
+    },
     "CreateOrganizationInvitesBody": {
       "type": "object",
       "properties": {
@@ -13222,6 +14201,10 @@
         "templating_options": {
           "$ref": "#/definitions/TemplatingOptions",
           "description": "Create repo from template. If template is chosen, init_settings are ignored."
+        },
+        "commit_email": {
+          "type": "string",
+          "description": "Email for this operation only: own verified address or current private alias.\nOmitted uses the profile default; an explicit invalid address is rejected."
         }
       },
       "required": [
@@ -13291,6 +14274,42 @@
           "format": "date-time"
         }
       }
+    },
+    "DeleteMultiLinkOperation": {
+      "type": "object",
+      "properties": {
+        "operation_id": {
+          "type": "string",
+          "title": "Operation ID"
+        },
+        "status_url": {
+          "type": "string",
+          "title": "URL to poll for operation status"
+        },
+        "status": {
+          "$ref": "#/definitions/OperationStatus"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when the operation was created"
+        },
+        "modified_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when the operation was last modified"
+        },
+        "response": {
+          "type": "object",
+          "properties": {},
+          "description": "Empty response. Present when status is \"success\"."
+        },
+        "error": {
+          "$ref": "#/definitions/OperationError",
+          "description": "Operation-level error. Present when status is \"failed\"."
+        }
+      },
+      "x-ogen-name": "DeleteMultiLinkOperationResponse"
     },
     "DeltaAction": {
       "type": "string",
@@ -14327,6 +15346,40 @@
         }
       }
     },
+    "ListMultiLinkInviteesResponse": {
+      "type": "object",
+      "properties": {
+        "invitees": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/MultiLinkInvitee"
+          },
+          "title": "List of invitees allowed to accept the multi-link"
+        },
+        "next_page_token": {
+          "type": "string",
+          "description": "A token, which can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages."
+        }
+      }
+    },
+    "ListMultiLinksResponse": {
+      "type": "object",
+      "properties": {
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/MultiLink"
+          },
+          "title": "List of multi-links"
+        },
+        "next_page_token": {
+          "type": "string",
+          "description": "A token, which can be sent as `page_token` to retrieve the next page.\nIf this field is omitted, there are no subsequent pages."
+        }
+      }
+    },
     "ListMyOrganizationsResponse": {
       "type": "object",
       "properties": {
@@ -14838,6 +15891,10 @@
         "force": {
           "type": "boolean",
           "title": "Force merge even if some checks are failing (requires special permissions); default: false"
+        },
+        "commit_email": {
+          "type": "string",
+          "description": "Email for this operation only: own verified address or current private alias.\nOmitted uses the profile default; an explicit invalid address is rejected.\nAn explicit email cannot be used when squashing another author's pull request.\nThe selected address is revalidated before merge; revocation fails the merge."
         }
       }
     },
@@ -14965,6 +16022,40 @@
         }
       }
     },
+    "MirroringQuota": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Effective maximum number of admitted mirroring attempts in a rolling 24-hour window.\nThe default limit is 6, but an organization policy can override it."
+        },
+        "used": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Number of admitted mirroring attempts in the current rolling 24-hour window."
+        },
+        "remaining": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Number of attempts still available in the current rolling 24-hour window."
+        },
+        "next_allowed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Earliest time at which a new attempt can be admitted. Present only when quota is exhausted."
+        }
+      }
+    },
+    "MirroringState": {
+      "type": "string",
+      "enum": [
+        "enabled",
+        "disabled",
+        "stopped_by_system"
+      ],
+      "description": " - enabled: Regular synchronization is enabled.\n - disabled: Mirroring is disabled. No new synchronization attempts can be started\nuntil mirroring is enabled again.\n - stopped_by_system: Mirroring was stopped automatically after a failed scheduled synchronization.\nRestart it explicitly to resume synchronization."
+    },
     "ModifyLabelCollectionRequest": {
       "type": "object",
       "properties": {
@@ -15006,6 +16097,93 @@
           "$ref": "#/definitions/Reaction"
         }
       }
+    },
+    "MultiLink": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Unique identifier of the multi-link"
+        },
+        "org_id": {
+          "type": "string",
+          "title": "Organization ID the multi-link belongs to"
+        },
+        "org_slug": {
+          "type": "string",
+          "title": "Organization slug the multi-link belongs to"
+        },
+        "slug": {
+          "type": "string",
+          "title": "Human-readable identifier of the multi-link"
+        },
+        "url": {
+          "type": "string",
+          "title": "Full invitation URL used by invitees to accept the invite"
+        },
+        "ttl_in_days": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Time-to-live in days. If unset, the link never expires."
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "When the multi-link expires"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "When the multi-link was created"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "When the multi-link was last updated"
+        },
+        "accepted_count": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Number of invitees who have already accepted the invitation"
+        },
+        "invitee_count": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Maximum number of invitees who can accept the invitation. Unset means unlimited."
+        },
+        "org_role": {
+          "$ref": "#/definitions/RepoRole",
+          "title": "Organization role granted to invitees upon acceptance. For now supports only repository roles\n(applied to all repositories in organization)"
+        },
+        "repo": {
+          "$ref": "#/definitions/RepoAssignment",
+          "description": "Repository access granted to invitees upon acceptance. Mutually exclusive with project."
+        },
+        "team_id": {
+          "type": "string",
+          "description": "IAM group ID of the team users join upon acceptance. Obtain it from\nGET /orgs/{org_slug}/teams. The team belongs to this multi-link's organization.\nUnset means no team assignment."
+        },
+        "restricted_to_count": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Number of invitee restrictions configured on the multi-link. When zero, the\nlink is open to anyone; otherwise only the invitees listed via the invitees\nsub-resource are allowed to accept it. Use ListMultiLinkInvitees to fetch\nthe full list."
+        }
+      },
+      "description": "MultiLink represents a reusable invitation link that can be accepted by\nmultiple users. The link can be scoped to an organization and, optionally,\nto a specific repository or project with a given role."
+    },
+    "MultiLinkInvitee": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "title": "Email address (for external users)"
+        },
+        "user_id": {
+          "type": "string",
+          "title": "User ID (for registered users)"
+        }
+      },
+      "description": "MultiLinkInvitee identifies a user allowed to accept a restricted multi-link.\nExactly one of the fields must be specified."
     },
     "MyRepositoryRatingReaction": {
       "type": "object",
@@ -16220,6 +17398,19 @@
         }
       }
     },
+    "RemoveMultiLinkInviteesBody": {
+      "type": "object",
+      "properties": {
+        "invitees": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/MultiLinkInvitee"
+          },
+          "description": "Invitees to remove from the allow-list. Entries not present are ignored."
+        }
+      }
+    },
     "RemoveOrganizationRolesBody": {
       "type": "object",
       "properties": {
@@ -16293,6 +17484,24 @@
         }
       },
       "title": "The response returns all roles and users from the repository"
+    },
+    "RepoAssignment": {
+      "type": "object",
+      "properties": {
+        "repo_id": {
+          "type": "string",
+          "title": "Repository ID"
+        },
+        "repo_slug": {
+          "type": "string",
+          "title": "Repository slug"
+        },
+        "repo_role": {
+          "$ref": "#/definitions/RepoRole",
+          "title": "Repository role granted to invitees"
+        }
+      },
+      "description": "RepoAssignment specifies a repository and the role granted to a multi-link invitee."
     },
     "RepoRole": {
       "type": "string",
@@ -16446,6 +17655,59 @@
         },
         "organization": {
           "$ref": "#/definitions/OrganizationEmbedded"
+        }
+      }
+    },
+    "RepositoryMirroringOperation": {
+      "type": "object",
+      "properties": {
+        "operation_id": {
+          "type": "string",
+          "description": "Unique operation identifier."
+        },
+        "status_url": {
+          "type": "string",
+          "description": "URL to poll for operation status."
+        },
+        "status": {
+          "$ref": "#/definitions/OperationStatus",
+          "description": "Current operation status."
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when operation was created."
+        },
+        "modified_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when operation was last modified."
+        },
+        "response": {
+          "type": "object",
+          "properties": {},
+          "description": "Empty response. Present when status is \"success\"."
+        },
+        "error": {
+          "$ref": "#/definitions/OperationError",
+          "description": "Operation-level error. Present when status is \"failed\"."
+        }
+      },
+      "x-ogen-name": "RepositoryMirroringOperationResponse"
+    },
+    "RepositoryMirroringStatus": {
+      "type": "object",
+      "properties": {
+        "mirroring_state": {
+          "$ref": "#/definitions/MirroringState"
+        },
+        "mirroring_quota": {
+          "$ref": "#/definitions/MirroringQuota"
+        },
+        "next_scheduled_sync": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Best-effort next scheduled synchronization time. Present only when mirroring is enabled\nand does not guarantee execution."
         }
       }
     },
@@ -17158,6 +18420,34 @@
           "$ref": "#/definitions/Milestone.Status"
         }
       }
+    },
+    "UpdateMultiLinkBody": {
+      "type": "object",
+      "properties": {
+        "ttl_in_days": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Time-to-live in days. If unset, the link never expires."
+        },
+        "invitee_count": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Maximum number of invitees who can accept the invitation"
+        },
+        "org_role": {
+          "$ref": "#/definitions/RepoRole",
+          "title": "Organization role granted to invitees upon acceptance. For now supports only repository roles\n(applied to all repositories in organization)"
+        },
+        "repo_role": {
+          "$ref": "#/definitions/RepoRole",
+          "description": "Repository role granted to invitees upon acceptance. Applies only when the\nmulti-link already targets a repository."
+        },
+        "team_id": {
+          "type": "string",
+          "description": "IAM group ID of the team users join upon acceptance. Obtain it from\nGET /orgs/{org_slug}/teams.\nMust belong to this organization. The caller must be able to manage its members.\nInclude team_id in update_mask and omit or clear its value to remove the assignment.\nWithout team_id in update_mask, the assignment is unchanged. Changes affect only\nacceptances scheduled after the update; existing team members are not moved."
+        }
+      },
+      "description": "Updating a multi-link that targets a repository or a project, even only ttl_in_days or\ninvitee_count, requires permission to grant the role the link hands out: the requested\nrepo_role or project_role when it is in update_mask, the stored one otherwise. A role change\nis rejected with FAILED_PRECONDITION when the link's service account cannot grant the new role."
     },
     "UpdateProjectBody": {
       "type": "object",

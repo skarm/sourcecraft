@@ -33,6 +33,22 @@ func (c *AppSecClient) transport() *Client {
 	return c.client
 }
 
+// AppSecGetLatestRunningScanOptions selects a repository and scan type.
+type AppSecGetLatestRunningScanOptions struct {
+	GitRepo  string
+	ScanType string
+}
+
+// GetLatestRunningScan returns the latest running default-branch scan.
+func (c *AppSecClient) GetLatestRunningScan(ctx context.Context, opts *AppSecGetLatestRunningScanOptions) (*AppSecScanSummaryDTO, *Response, error) {
+	var latest *AppSecGetLatestScanOptions
+	if opts != nil {
+		latest = &AppSecGetLatestScanOptions{GitRepo: opts.GitRepo, ScanType: opts.ScanType, Status: "RUNNING"}
+	}
+
+	return c.GetLatestScan(ctx, latest)
+}
+
 // uploadReport streams the multipart file and accepts both synchronous 200 and
 // asynchronous 202 responses. Neither response has a documented result model.
 func (c *AppSecClient) uploadReport(ctx context.Context, path string, opts queryEncoder, file *Upload, fields []formField) (*Response, error) {

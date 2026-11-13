@@ -19,15 +19,15 @@ func Paginate[T any](ctx context.Context, fetch func(context.Context, string) ([
 			return
 		}
 
+		if err := ctx.Err(); err != nil {
+			yield(zero, err)
+			return
+		}
+
 		token := ""
 		seen := map[string]bool{"": true}
 
 		for {
-			if err := ctx.Err(); err != nil {
-				yield(zero, err)
-				return
-			}
-
 			items, next, err := fetch(ctx, token)
 			if err != nil {
 				yield(zero, err)
@@ -43,6 +43,11 @@ func Paginate[T any](ctx context.Context, fetch func(context.Context, string) ([
 				if !yield(item, nil) {
 					return
 				}
+			}
+
+			if err := ctx.Err(); err != nil {
+				yield(zero, err)
+				return
 			}
 
 			if next == "" {

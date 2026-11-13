@@ -184,6 +184,17 @@ func TestCanonicalRejectsDuplicateObjectNames(t *testing.T) {
 	}
 }
 
+func TestCanonicalRejectsInvalidUTF8(t *testing.T) {
+	const valid = `{"swagger":"2.0","paths":{},"description":"проверка �"}`
+	if _, err := canonicalizeSpec([]byte(valid)); err != nil {
+		t.Fatal(err)
+	}
+	invalid := strings.Replace(valid, "�", "\xff", 1)
+	if _, err := canonicalizeSpec([]byte(invalid)); err == nil {
+		t.Fatal("invalid UTF-8 was accepted as a replacement character")
+	}
+}
+
 func TestReportFilesCannotAliasInputs(t *testing.T) {
 	for _, link := range []struct {
 		name   string

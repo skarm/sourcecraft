@@ -182,8 +182,9 @@ func (g *generator) projectedType(s *schema, input bool) string {
 
 func (g *generator) needsPointer(s *schema, pointerOptionals, required bool) bool {
 	resolved := g.resolve(s)
-	if s.Ref != "" && resolved.Type == typeObject {
-		return true
+	if resolved.Type == typeObject {
+		// An optional empty object must distinguish an absent field from {}.
+		return s.Ref != "" || (!required && len(resolved.Properties) == 0 && resolved.AdditionalProperties == nil)
 	}
 
 	if resolved.Type == typeString && resolved.Format == "date-time" {

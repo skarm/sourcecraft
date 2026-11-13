@@ -100,3 +100,21 @@ func TestPaginationCancellationBetweenItems(t *testing.T) {
 		t.Fatalf("calls=%d items=%d errors=%d", calls, items, failures)
 	}
 }
+
+func TestPaginationCancellationOnEmptyLastPage(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	failures := 0
+	for _, err := range sourcecraft.Paginate(ctx, func(context.Context, string) ([]int, string, error) {
+		cancel()
+		return nil, "", nil
+	}) {
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("error = %v; want context.Canceled", err)
+		}
+		failures++
+	}
+	if failures != 1 {
+		t.Fatalf("received %d errors; want 1", failures)
+	}
+}

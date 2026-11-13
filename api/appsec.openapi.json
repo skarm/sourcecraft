@@ -489,6 +489,26 @@
           }
         }
       },
+      "DastScanRequest" : {
+        "type" : "object",
+        "properties" : {
+          "url" : {
+            "type" : "string",
+            "description" : "Public HTTPS target on the default port, without credentials, resolving only to Yandex Cloud addresses. Omit or leave blank to use the URL saved in repository security settings.",
+            "examples" : [ "https://app.example.com" ]
+          }
+        }
+      },
+      "DastScanResponse" : {
+        "type" : "object",
+        "required" : [ "scanUuid" ],
+        "properties" : {
+          "scanUuid" : {
+            "type" : "string",
+            "description" : "UUID of the new DAST scan; use the scan and defect-group endpoints to read its status and results"
+          }
+        }
+      },
       "DefectGroup" : {
         "type" : "object",
         "properties" : {
@@ -1388,7 +1408,7 @@
       "ReportUploadForm" : {
         "description" : "Multipart form for uploading a security analysis report.",
         "type" : "object",
-        "required" : [ "file", "commit", "engineName", "reportType" ],
+        "required" : [ "file", "commit", "reportType" ],
         "properties" : {
           "file" : {
             "type" : "string",
@@ -1401,8 +1421,8 @@
             "examples" : [ "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" ]
           },
           "engineName" : {
-            "type" : "string",
-            "description" : "Human-readable name of the analysis tool that produced the report.",
+            "type" : [ "string", "null" ],
+            "description" : "Human-readable name of the analysis tool. Required for formats other than SARIF. For SARIF, omit or leave blank to use runs[].tool.driver.name; all runs must have the same name. An explicit nonblank name takes precedence. Names must be at most 255 UTF-8 bytes, contain no control characters or path separators, and must not be '.' or '..'.",
             "examples" : [ "Trivy" ]
           },
           "reportType" : {
@@ -1434,7 +1454,7 @@
           },
           "isReactive" : {
             "type" : "boolean",
-            "description" : "When true, respond 202 immediately and process the report in the background; otherwise process synchronously and respond 200 (or 400 on parse errors)."
+            "description" : "When true, validate and resolve the engine name, then respond 202 and process the report in the background; otherwise process synchronously and respond 200 (or 400 on parse errors)."
           },
           "scanUuid" : {
             "type" : [ "string", "null" ],
@@ -3246,7 +3266,7 @@
     "/v1/reports/upload" : {
       "post" : {
         "summary" : "Upload a security analysis report",
-        "description" : "Accepts a SARIF/SBOM/TEXT/AUDIT report as multipart/form-data and processes it for the given repository.\n\nThe `file` part can be either a raw report file or a ZIP archive.\n\nZIP archive requirements:\n- exactly one report file;\n- the report file must be in the archive root;\n- directories, nested paths, and extra files are rejected;\n- the single uncompressed entry must be no larger than 100 MB.\n\nThe file content must match `reportType`: SARIF uploads should contain a SARIF report, and SBOM uploads should contain SPDX or CycloneDX JSON. The REST request body is limited to 100 MB.\n\nCreate archives without parent directories: `zip report.zip report.sarif`. Do not zip a folder with `zip -r report.zip reports/`, because nested paths are rejected.\n\nSet `isReactive=true` to process in the background — note that it answers 202 before parsing, so a report rejected later is reported only in the logs. Keep the default `isReactive=false` to get 400 with the reason the report was rejected, which is what an AUDIT upload needs: its message names every result and field to fix before uploading the corrected report again.",
+        "description" : "Accepts a SARIF/SBOM/TEXT/AUDIT report as multipart/form-data and processes it for the given repository.\n\nThe `file` part can be either a raw report file or a ZIP archive.\n\nZIP archive requirements:\n- exactly one report file;\n- the report file must be in the archive root;\n- directories, nested paths, and extra files are rejected;\n- the single uncompressed entry must be no larger than 100 MB.\n\nThe file content must match `reportType`: SARIF uploads should contain a SARIF report, and SBOM uploads should contain SPDX or CycloneDX JSON. The REST request body is limited to 100 MB.\n\nCreate archives without parent directories: `zip report.zip report.sarif`. Do not zip a folder with `zip -r report.zip reports/`, because nested paths are rejected.\n\nFor SARIF, omit or leave `engineName` blank to use the common `runs[].tool.driver.name`. An explicit nonblank name takes precedence. Name validation and automatic detection happen before accepting the upload, including in background mode.\n\nSet `isReactive=true` to process in the background — note that it answers 202 before full parsing, so a report rejected later is reported only in the logs. Keep the default `isReactive=false` to get 400 with the reason the report was rejected, which is what an AUDIT upload needs: its message names every result and field to fix before uploading the corrected report again.",
         "tags" : [ "Report Upload" ],
         "parameters" : [ {
           "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
@@ -3425,8 +3445,11 @@
         "tags" : [ "Scan Rest Api" ]
       }
     },
-    "/v1/scans/latest" : {
-      "get" : {
+    "/v1/scans/dast" : {
+      "post" : {
+        "summary" : "Start a DAST scan by URL",
+        "description" : "Uses the supplied URL or the URL saved in repository security settings. The target is validated in both cases. An explicit URL updates the existing UI settings after a successful start. Returns after SolidPoint accepts the scan; status and results become available through the REST read endpoints. The new scan has type SCAN_TYPE_CLOUD_DAST and origin BUILT_IN.",
+        "tags" : [ "DAST Scans" ],
         "parameters" : [ {
           "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
           "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
@@ -3438,26 +3461,58 @@
             "pattern" : "\\S"
           }
         } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ScanSummaryDto"
-                }
+        "requestBody" : {
+          "required" : true,
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DastScanRequest"
               }
             }
           }
         },
-        "summary" : "Get Latest Scan",
-        "tags" : [ "Scan Rest Api" ]
+        "responses" : {
+          "202" : {
+            "description" : "SolidPoint accepted the DAST scan",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DastScanResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Missing gitRepo, malformed JSON or invalid explicit URL"
+          },
+          "401" : {
+            "description" : "Missing or invalid authorization header"
+          },
+          "403" : {
+            "description" : "Permission denied"
+          },
+          "404" : {
+            "description" : "Repository not found"
+          },
+          "409" : {
+            "description" : "Configured DAST URL is missing or invalid, or no repository commit can be resolved"
+          },
+          "500" : {
+            "description" : "Failed to prepare the DAST scan"
+          },
+          "502" : {
+            "description" : "SolidPoint could not start the scan"
+          },
+          "503" : {
+            "description" : "SolidPoint integration is disabled"
+          }
+        }
       }
     },
-    "/v1/scans/latest-running" : {
+    "/v1/scans/latest" : {
       "get" : {
-        "summary" : "Get the latest running scan of the requested type",
-        "description" : "Returns the newest running default-branch scan, excluding pull-request, finished and failed scans. Returns 404 when no scan of the requested type is running.",
+        "summary" : "Get the latest scan with the requested status and type",
+        "description" : "Returns the newest default-branch scan matching status and scanType, excluding pull-request scans. Defaults to FINISHED and SCAN_TYPE_DEFAULT. Returns 404 when no matching scan exists.",
         "parameters" : [ {
           "description" : "Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).",
           "example" : "0199140f-4343-7c06-a7e3-b835c305b629",
@@ -3472,6 +3527,16 @@
           "description" : "Scan type: SCAN_TYPE_DEFAULT (default), SCAN_TYPE_AUDIT or SCAN_TYPE_CLOUD_DAST. Omit or leave blank for SCAN_TYPE_DEFAULT. Names are case-sensitive.",
           "example" : "SCAN_TYPE_CLOUD_DAST",
           "name" : "scanType",
+          "in" : "query",
+          "schema" : {
+            "type" : "string",
+            "default" : ""
+          },
+          "required" : true
+        }, {
+          "description" : "Scan status: FINISHED (default), RUNNING or FAILED. Omit or leave blank for FINISHED. Names are case-sensitive.",
+          "example" : "RUNNING",
+          "name" : "status",
           "in" : "query",
           "schema" : {
             "type" : "string",
@@ -3591,6 +3656,9 @@
   "tags" : [ {
     "name" : "Artifacts",
     "description" : "List and download original scan artifacts, including SBOM and SARIF files."
+  }, {
+    "name" : "DAST Scans",
+    "description" : "Start DAST scans of web applications using SolidPoint."
   }, {
     "name" : "Report Upload",
     "description" : "Upload security analysis reports (SARIF/SBOM/TEXT/AUDIT) for a repository."

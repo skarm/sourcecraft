@@ -70,6 +70,22 @@ func TestAppSecQueryDefaultsAndValidation(t *testing.T) {
 	}
 }
 
+func TestAppSecGetLatestRunningScan(t *testing.T) {
+	client, err := NewAppSecClient("", WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		want := url.Values{"gitRepo": {"repo"}, "scanType": {"SCAN_TYPE_AUDIT"}, "status": {"RUNNING"}}
+		if req.Method != http.MethodGet || req.URL.Path != "/v1/scans/latest" || !reflect.DeepEqual(req.URL.Query(), want) {
+			t.Fatalf("unexpected request %s %s", req.Method, req.URL)
+		}
+		return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(`{}`))}, nil
+	})}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if scan, _, err := client.GetLatestRunningScan(t.Context(), &AppSecGetLatestRunningScanOptions{GitRepo: "repo", ScanType: "SCAN_TYPE_AUDIT"}); err != nil || scan == nil {
+		t.Fatalf("scan=%+v error=%v", scan, err)
+	}
+}
+
 func TestAppSecPartialUpdatesAndNumericPrecision(t *testing.T) {
 	patch := AppSecChangeRepositoryStatusesRequest{AppsecRepositorySettings: &AppSecRepositorySettings{MergeScaDefectGroupsByPackage: new(false), DastURL: new("")}}
 	data, err := json.Marshal(patch)
@@ -99,7 +115,11 @@ func TestAppSecPartialUpdatesAndNumericPrecision(t *testing.T) {
 }
 
 func TestAppSecUploadResponseModesAndOptionalFields(t *testing.T) {
-	for _, status := range []int{200, 202} {
+	for _, scenario := range []struct {
+		status     int
+		engineName string
+	}{{http.StatusOK, "scanner"}, {http.StatusAccepted, ""}} {
+		status, engineName := scenario.status, scenario.engineName
 		t.Run(http.StatusText(status), func(t *testing.T) {
 			file := &countedBody{Reader: strings.NewReader(strings.Repeat("x", 16))}
 			client, err := NewAppSecClient("", WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
@@ -127,7 +147,10 @@ func TestAppSecUploadResponseModesAndOptionalFields(t *testing.T) {
 					fields[part.FormName()] = string(data)
 				}
 				delete(fields, "file")
-				want := map[string]string{"commit": "sha", "engineName": "scanner", "reportType": "SARIF", "isReactive": "false", "expectedReportCount": "0"}
+				want := map[string]string{"commit": "sha", "reportType": "SARIF", "isReactive": "false", "expectedReportCount": "0"}
+				if engineName != "" {
+					want["engineName"] = engineName
+				}
 				if !reflect.DeepEqual(fields, want) {
 					t.Fatalf("form = %v; want %v", fields, want)
 				}
@@ -136,7 +159,7 @@ func TestAppSecUploadResponseModesAndOptionalFields(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			response, err := client.UploadReport(t.Context(), &AppSecReportUploadForm{Commit: "sha", EngineName: "scanner", ReportType: AppSecReportUploadFormReportTypeSarif, File: &Upload{Filename: "report.sarif", Reader: file}, IsReactive: new(false), ExpectedReportCount: new(int32(0))}, &AppSecUploadReportOptions{GitRepo: "repo"})
+			response, err := client.UploadReport(t.Context(), &AppSecReportUploadForm{Commit: "sha", EngineName: engineName, ReportType: AppSecReportUploadFormReportTypeSarif, File: &Upload{Filename: "report.sarif", Reader: file}, IsReactive: new(false), ExpectedReportCount: new(int32(0))}, &AppSecUploadReportOptions{GitRepo: "repo"})
 			if err != nil || response == nil || response.StatusCode != status || file.read != 16 || file.closed {
 				t.Fatalf("response=%v error=%v bytes=%d", response, err, file.read)
 			}
@@ -146,8 +169,10 @@ func TestAppSecUploadResponseModesAndOptionalFields(t *testing.T) {
 
 func TestAppSecUploadReadErrorAndRequiredFields(t *testing.T) {
 	client, err := NewAppSecClient("", WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-		_, err := io.Copy(io.Discard, req.Body)
-		return nil, err
+		if _, err := io.Copy(io.Discard, req.Body); err != nil {
+			return nil, err
+		}
+		return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: http.NoBody}, nil
 	})}))
 	if err != nil {
 		t.Fatal(err)
@@ -166,6 +191,8 @@ func TestAppSecUploadReadErrorAndRequiredFields(t *testing.T) {
 			form.Commit = ""
 		case "engineName":
 			form.EngineName = ""
+			form.ReportType = AppSecReportUploadFormReportTypeText
+			form.File = &Upload{Filename: "report.txt", Reader: strings.NewReader("report")}
 		case "reportType":
 			form.ReportType = ""
 		case "file":

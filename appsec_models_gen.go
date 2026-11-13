@@ -213,6 +213,18 @@ type AppSecDastContext struct {
 	WebResponse *string        `json:"webResponse,omitzero"`
 }
 
+// AppSecDastScanRequest is the AppSec API model for DastScanRequest.
+type AppSecDastScanRequest struct {
+	// Public HTTPS target on the default port, without credentials, resolving only to Yandex Cloud addresses. Omit or leave blank to use the URL saved in repository security settings.
+	URL *string `json:"url,omitzero"`
+}
+
+// AppSecDastScanResponse is the AppSec API model for DastScanResponse.
+type AppSecDastScanResponse struct {
+	// UUID of the new DAST scan; use the scan and defect-group endpoints to read its status and results
+	ScanUUID string `json:"scanUuid"`
+}
+
 // AppSecDefectGroup is the AppSec API model for DefectGroup.
 type AppSecDefectGroup struct {
 	Activities            []*AppSecActivity        `json:"activities,omitzero"`
@@ -606,7 +618,7 @@ type AppSecReportOperationDTO struct {
 type AppSecReportUploadForm struct {
 	// Full SHA commit hash identifying the scanned code revision.
 	Commit string `json:"commit"`
-	// Human-readable name of the analysis tool that produced the report.
+	// Human-readable name of the analysis tool. Required for formats other than SARIF. For SARIF, omit or leave blank to use runs[].tool.driver.name; all runs must have the same name. An explicit nonblank name takes precedence. Names must be at most 255 UTF-8 bytes, contain no control characters or path separators, and must not be '.' or '..'.
 	EngineName string `json:"engineName"`
 	// Category of the analysis engine. Defaults to UNSPECIFIED when absent.
 	EngineType *AppSecReportUploadFormEngineType `json:"engineType,omitzero"`
@@ -614,7 +626,7 @@ type AppSecReportUploadForm struct {
 	ExpectedReportCount *int32 `json:"expectedReportCount,omitzero"`
 	// Raw report file content, or a ZIP archive with exactly one report file in the archive root. Do not include directories or extra files. The uncompressed ZIP entry must be no larger than 100 MB.
 	File *Upload `json:"-"`
-	// When true, respond 202 immediately and process the report in the background; otherwise process synchronously and respond 200 (or 400 on parse errors).
+	// When true, validate and resolve the engine name, then respond 202 and process the report in the background; otherwise process synchronously and respond 200 (or 400 on parse errors).
 	IsReactive *bool `json:"isReactive,omitzero"`
 	// Public pull request UUID or decimal platform PR ID in the range 1..18446744073709551615. A numeric value is a platform ID, not the repository-local PR number. Omit or leave blank for a branch scan.
 	PRUUID   *string `json:"prUuid,omitzero"`

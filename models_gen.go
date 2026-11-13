@@ -20,6 +20,12 @@ const (
 	AIProductCliYcodex          AIProduct = "cli_ycodex"
 )
 
+// AddMultiLinkInviteesBody is the API model for AddMultiLinkInviteesBody.
+type AddMultiLinkInviteesBody struct {
+	// Invitees to add to the allow-list. Duplicates are ignored.
+	Invitees []MultiLinkInvitee `json:"invitees,omitzero"`
+}
+
 // AddOrganizationRolesBody is the API model for AddOrganizationRolesBody.
 type AddOrganizationRolesBody struct {
 	// List of repository roles that will be set on the organization level. These roles are inherited by all repositories in the organization.
@@ -361,6 +367,46 @@ type CreateMilestoneBody struct {
 	StartDate *time.Time `json:"start_date,omitzero"`
 }
 
+// CreateMultiLinkBody is the API model for CreateMultiLinkBody.
+type CreateMultiLinkBody struct {
+	// Maximum number of invitees who can accept the invitation. Unset means unlimited.
+	InviteeCount int64 `json:"invitee_count,omitzero"`
+	// Organization role granted to invitees upon acceptance. For now supports only repository roles
+	// (applied to all repositories in organization)
+	OrgRole RepoRole `json:"org_role,omitzero"`
+	// Repository access granted to invitees upon acceptance. Mutually exclusive with project.
+	// The caller needs permission to grant the requested repository role:
+	// src.repositories.updateAccessBindings, or src.repositories.manageAdmins for repo_admin.
+	Repo *RepoAssignment `json:"repo,omitzero"`
+	// If set, only these identities are allowed to accept the invitation
+	RestrictedTo []MultiLinkInvitee `json:"restricted_to,omitzero"`
+	// Human-readable identifier of the multi-link
+	Slug string `json:"slug,omitzero"`
+	// IAM group ID of the team users join upon acceptance. Obtain it from
+	// GET /orgs/{org_slug}/teams. Must belong to this organization. The caller
+	// must have permission to manage the team's members.
+	TeamID string `json:"team_id,omitzero"`
+	// Time-to-live in days. If unset, the link never expires.
+	TtlInDays int64 `json:"ttl_in_days,omitzero"`
+}
+
+// CreateMultiLinkOperation is the API model for CreateMultiLinkOperation.
+type CreateMultiLinkOperation struct {
+	// Timestamp when the operation was created
+	CreatedAt *time.Time `json:"created_at,omitzero"`
+	// Operation-level error. Present when status is "failed".
+	Error *OperationError `json:"error,omitzero"`
+	// Timestamp when the operation was last modified
+	ModifiedAt *time.Time `json:"modified_at,omitzero"`
+	// Operation ID
+	OperationID string `json:"operation_id,omitzero"`
+	// Created multi-link. Present when status is "success".
+	Response *MultiLink      `json:"response,omitzero"`
+	Status   OperationStatus `json:"status,omitzero"`
+	// URL to poll for operation status
+	StatusURL string `json:"status_url,omitzero"`
+}
+
 // CreateOrganizationInvitesBody is the API model for CreateOrganizationInvitesBody.
 type CreateOrganizationInvitesBody struct {
 	// List of invitees
@@ -490,6 +536,9 @@ type CreateReleaseBody struct {
 
 // CreateRepositoryBody is the API model for CreateRepositoryBody.
 type CreateRepositoryBody struct {
+	// Email for this operation only: own verified address or current private alias.
+	// Omitted uses the profile default; an explicit invalid address is rejected.
+	CommitEmail *string `json:"commit_email,omitzero"`
 	// Repository description (up to 4096 characters)
 	Description *string `json:"description,omitzero"`
 	// Repository initialization settings
@@ -528,6 +577,23 @@ type DatesByStage struct {
 	FinishedAt *time.Time `json:"finished_at,omitzero"`
 	StartedAt  *time.Time `json:"started_at,omitzero"`
 	UpdatedAt  *time.Time `json:"updated_at,omitzero"`
+}
+
+// DeleteMultiLinkOperation is the API model for DeleteMultiLinkOperation.
+type DeleteMultiLinkOperation struct {
+	// Timestamp when the operation was created
+	CreatedAt *time.Time `json:"created_at,omitzero"`
+	// Operation-level error. Present when status is "failed".
+	Error *OperationError `json:"error,omitzero"`
+	// Timestamp when the operation was last modified
+	ModifiedAt *time.Time `json:"modified_at,omitzero"`
+	// Operation ID
+	OperationID string `json:"operation_id,omitzero"`
+	// Empty response. Present when status is "success".
+	Response *EmptyResponse  `json:"response,omitzero"`
+	Status   OperationStatus `json:"status,omitzero"`
+	// URL to poll for operation status
+	StatusURL string `json:"status_url,omitzero"`
 }
 
 // DeltaAction is the API model for DeltaAction.
@@ -1088,6 +1154,24 @@ type ListMilestonesForRepositoryResponse struct {
 	NextPageToken string      `json:"next_page_token,omitzero"`
 }
 
+// ListMultiLinkInviteesResponse is the API model for ListMultiLinkInviteesResponse.
+type ListMultiLinkInviteesResponse struct {
+	// List of invitees allowed to accept the multi-link
+	Invitees []MultiLinkInvitee `json:"invitees,omitzero"`
+	// A token, which can be sent as `page_token` to retrieve the next page.
+	// If this field is omitted, there are no subsequent pages.
+	NextPageToken string `json:"next_page_token,omitzero"`
+}
+
+// ListMultiLinksResponse is the API model for ListMultiLinksResponse.
+type ListMultiLinksResponse struct {
+	// List of multi-links
+	Links []MultiLink `json:"links,omitzero"`
+	// A token, which can be sent as `page_token` to retrieve the next page.
+	// If this field is omitted, there are no subsequent pages.
+	NextPageToken string `json:"next_page_token,omitzero"`
+}
+
 // ListMyOrganizationsResponse is the API model for ListMyOrganizationsResponse.
 type ListMyOrganizationsResponse struct {
 	Organizations []Organization `json:"organizations,omitzero"`
@@ -1338,6 +1422,11 @@ type MergeParameters struct {
 
 // MergePullRequestBody is the API model for MergePullRequestBody.
 type MergePullRequestBody struct {
+	// Email for this operation only: own verified address or current private alias.
+	// Omitted uses the profile default; an explicit invalid address is rejected.
+	// An explicit email cannot be used when squashing another author's pull request.
+	// The selected address is revalidated before merge; revocation fails the merge.
+	CommitEmail *string `json:"commit_email,omitzero"`
 	// Delete source branch after successful merge; default value inherited from config
 	DeleteBranch *bool `json:"delete_branch,omitzero"`
 	// Force merge even if some checks are failing (requires special permissions); default: false
@@ -1411,6 +1500,32 @@ type MilestoneEmbedded struct {
 	Slug string `json:"slug,omitzero"`
 }
 
+// MirroringQuota is the API model for MirroringQuota.
+type MirroringQuota struct {
+	// Effective maximum number of admitted mirroring attempts in a rolling 24-hour window.
+	// The default limit is 6, but an organization policy can override it.
+	Limit int32 `json:"limit,omitzero"`
+	// Earliest time at which a new attempt can be admitted. Present only when quota is exhausted.
+	NextAllowedAt *time.Time `json:"next_allowed_at,omitzero"`
+	// Number of attempts still available in the current rolling 24-hour window.
+	Remaining int32 `json:"remaining,omitzero"`
+	// Number of admitted mirroring attempts in the current rolling 24-hour window.
+	Used int32 `json:"used,omitzero"`
+}
+
+// MirroringState  - enabled: Regular synchronization is enabled.
+// - disabled: Mirroring is disabled. No new synchronization attempts can be started
+// until mirroring is enabled again.
+// - stopped_by_system: Mirroring was stopped automatically after a failed scheduled synchronization.
+// Restart it explicitly to resume synchronization.
+type MirroringState string
+
+const (
+	MirroringStateEnabled         MirroringState = "enabled"
+	MirroringStateDisabled        MirroringState = "disabled"
+	MirroringStateStoppedBySystem MirroringState = "stopped_by_system"
+)
+
 // ModifyLabelCollectionRequest is the API model for ModifyLabelCollectionRequest.
 type ModifyLabelCollectionRequest struct {
 	IDs   []string `json:"ids,omitzero"`
@@ -1426,6 +1541,57 @@ type ModifyPullRequestCollectionRequest struct {
 // ModifyReactionBody is the API model for ModifyReactionBody.
 type ModifyReactionBody struct {
 	Reaction *Reaction `json:"reaction,omitzero"`
+}
+
+// MultiLink MultiLink represents a reusable invitation link that can be accepted by
+// multiple users. The link can be scoped to an organization and, optionally,
+// to a specific repository or project with a given role.
+type MultiLink struct {
+	// Number of invitees who have already accepted the invitation
+	AcceptedCount int64 `json:"accepted_count,omitzero"`
+	// When the multi-link was created
+	CreatedAt *time.Time `json:"created_at,omitzero"`
+	// When the multi-link expires
+	ExpiresAt *time.Time `json:"expires_at,omitzero"`
+	// Unique identifier of the multi-link
+	ID string `json:"id,omitzero"`
+	// Maximum number of invitees who can accept the invitation. Unset means unlimited.
+	InviteeCount int64 `json:"invitee_count,omitzero"`
+	// Organization ID the multi-link belongs to
+	OrgID string `json:"org_id,omitzero"`
+	// Organization role granted to invitees upon acceptance. For now supports only repository roles
+	// (applied to all repositories in organization)
+	OrgRole RepoRole `json:"org_role,omitzero"`
+	// Organization slug the multi-link belongs to
+	OrgSlug string `json:"org_slug,omitzero"`
+	// Repository access granted to invitees upon acceptance. Mutually exclusive with project.
+	Repo *RepoAssignment `json:"repo,omitzero"`
+	// Number of invitee restrictions configured on the multi-link. When zero, the
+	// link is open to anyone; otherwise only the invitees listed via the invitees
+	// sub-resource are allowed to accept it. Use ListMultiLinkInvitees to fetch
+	// the full list.
+	RestrictedToCount int64 `json:"restricted_to_count,omitzero"`
+	// Human-readable identifier of the multi-link
+	Slug string `json:"slug,omitzero"`
+	// IAM group ID of the team users join upon acceptance. Obtain it from
+	// GET /orgs/{org_slug}/teams. The team belongs to this multi-link's organization.
+	// Unset means no team assignment.
+	TeamID string `json:"team_id,omitzero"`
+	// Time-to-live in days. If unset, the link never expires.
+	TtlInDays int64 `json:"ttl_in_days,omitzero"`
+	// When the multi-link was last updated
+	UpdatedAt *time.Time `json:"updated_at,omitzero"`
+	// Full invitation URL used by invitees to accept the invite
+	URL string `json:"url,omitzero"`
+}
+
+// MultiLinkInvitee MultiLinkInvitee identifies a user allowed to accept a restricted multi-link.
+// Exactly one of the fields must be specified.
+type MultiLinkInvitee struct {
+	// Email address (for external users)
+	Email string `json:"email,omitzero"`
+	// User ID (for registered users)
+	UserID string `json:"user_id,omitzero"`
 }
 
 // MyRepositoryRatingReaction is the API model for MyRepositoryRatingReaction.
@@ -2084,6 +2250,12 @@ type ReleaseCodeAssistWorkplacesBulkBody struct {
 	UserIDs []string `json:"user_ids,omitzero"`
 }
 
+// RemoveMultiLinkInviteesBody is the API model for RemoveMultiLinkInviteesBody.
+type RemoveMultiLinkInviteesBody struct {
+	// Invitees to remove from the allow-list. Entries not present are ignored.
+	Invitees []MultiLinkInvitee `json:"invitees,omitzero"`
+}
+
 // RemoveOrganizationRolesBody is the API model for RemoveOrganizationRolesBody.
 type RemoveOrganizationRolesBody struct {
 	// List of repository roles that will be removed from the organization level. These roles are inherited by all repositories in the organization.
@@ -2118,6 +2290,16 @@ type RemoveRepoRolesResponse struct {
 	// If this field is omitted, there are no subsequent pages.
 	NextPageToken string        `json:"next_page_token,omitzero"`
 	SubjectRoles  []SubjectRole `json:"subject_roles,omitzero"`
+}
+
+// RepoAssignment RepoAssignment specifies a repository and the role granted to a multi-link invitee.
+type RepoAssignment struct {
+	// Repository ID
+	RepoID string `json:"repo_id,omitzero"`
+	// Repository role granted to invitees
+	RepoRole RepoRole `json:"repo_role,omitzero"`
+	// Repository slug
+	RepoSlug string `json:"repo_slug,omitzero"`
 }
 
 // RepoRole is the API model for RepoRole.
@@ -2200,6 +2382,33 @@ type RepositoryEmbedded struct {
 	ID           string                `json:"id,omitzero"`
 	Organization *OrganizationEmbedded `json:"organization,omitzero"`
 	Slug         string                `json:"slug,omitzero"`
+}
+
+// RepositoryMirroringOperation is the API model for RepositoryMirroringOperation.
+type RepositoryMirroringOperation struct {
+	// Timestamp when operation was created.
+	CreatedAt *time.Time `json:"created_at,omitzero"`
+	// Operation-level error. Present when status is "failed".
+	Error *OperationError `json:"error,omitzero"`
+	// Timestamp when operation was last modified.
+	ModifiedAt *time.Time `json:"modified_at,omitzero"`
+	// Unique operation identifier.
+	OperationID string `json:"operation_id,omitzero"`
+	// Empty response. Present when status is "success".
+	Response *EmptyResponse `json:"response,omitzero"`
+	// Current operation status.
+	Status OperationStatus `json:"status,omitzero"`
+	// URL to poll for operation status.
+	StatusURL string `json:"status_url,omitzero"`
+}
+
+// RepositoryMirroringStatus is the API model for RepositoryMirroringStatus.
+type RepositoryMirroringStatus struct {
+	MirroringQuota *MirroringQuota `json:"mirroring_quota,omitzero"`
+	MirroringState MirroringState  `json:"mirroring_state,omitzero"`
+	// Best-effort next scheduled synchronization time. Present only when mirroring is enabled
+	// and does not guarantee execution.
+	NextScheduledSync *time.Time `json:"next_scheduled_sync,omitzero"`
 }
 
 // RepositoryRating Aggregated rating information for a repository.
@@ -2648,6 +2857,30 @@ type UpdateMilestoneBody struct {
 	Status      *MilestoneStatus `json:"status,omitzero"`
 }
 
+// UpdateMultiLinkBody Updating a multi-link that targets a repository or a project, even only ttl_in_days or
+// invitee_count, requires permission to grant the role the link hands out: the requested
+// repo_role or project_role when it is in update_mask, the stored one otherwise. A role change
+// is rejected with FAILED_PRECONDITION when the link's service account cannot grant the new role.
+type UpdateMultiLinkBody struct {
+	// Maximum number of invitees who can accept the invitation
+	InviteeCount int64 `json:"invitee_count,omitzero"`
+	// Organization role granted to invitees upon acceptance. For now supports only repository roles
+	// (applied to all repositories in organization)
+	OrgRole RepoRole `json:"org_role,omitzero"`
+	// Repository role granted to invitees upon acceptance. Applies only when the
+	// multi-link already targets a repository.
+	RepoRole RepoRole `json:"repo_role,omitzero"`
+	// IAM group ID of the team users join upon acceptance. Obtain it from
+	// GET /orgs/{org_slug}/teams.
+	// Must belong to this organization. The caller must be able to manage its members.
+	// Include team_id in update_mask and omit or clear its value to remove the assignment.
+	// Without team_id in update_mask, the assignment is unchanged. Changes affect only
+	// acceptances scheduled after the update; existing team members are not moved.
+	TeamID string `json:"team_id,omitzero"`
+	// Time-to-live in days. If unset, the link never expires.
+	TtlInDays int64 `json:"ttl_in_days,omitzero"`
+}
+
 // UpdateProjectBody is the API model for UpdateProjectBody.
 type UpdateProjectBody struct {
 	Description *string            `json:"description,omitzero"`
@@ -2830,6 +3063,35 @@ type Tag struct {
 	Target string `json:"target,omitzero"`
 }
 
+// AddMultiLinkInviteesBodyInput is the request projection of AddMultiLinkInviteesBody.
+type AddMultiLinkInviteesBodyInput struct {
+	// Invitees to add to the allow-list. Duplicates are ignored.
+	Invitees []MultiLinkInviteeInput `json:"invitees,omitzero"`
+}
+
+// CreateMultiLinkBodyInput is the request projection of CreateMultiLinkBody.
+type CreateMultiLinkBodyInput struct {
+	// Maximum number of invitees who can accept the invitation. Unset means unlimited.
+	InviteeCount *int64 `json:"invitee_count,omitzero"`
+	// Organization role granted to invitees upon acceptance. For now supports only repository roles
+	// (applied to all repositories in organization)
+	OrgRole *RepoRole `json:"org_role,omitzero"`
+	// Repository access granted to invitees upon acceptance. Mutually exclusive with project.
+	// The caller needs permission to grant the requested repository role:
+	// src.repositories.updateAccessBindings, or src.repositories.manageAdmins for repo_admin.
+	Repo *RepoAssignmentInput `json:"repo,omitzero"`
+	// If set, only these identities are allowed to accept the invitation
+	RestrictedTo []MultiLinkInviteeInput `json:"restricted_to,omitzero"`
+	// Human-readable identifier of the multi-link
+	Slug *string `json:"slug,omitzero"`
+	// IAM group ID of the team users join upon acceptance. Obtain it from
+	// GET /orgs/{org_slug}/teams. Must belong to this organization. The caller
+	// must have permission to manage the team's members.
+	TeamID *string `json:"team_id,omitzero"`
+	// Time-to-live in days. If unset, the link never expires.
+	TtlInDays *int64 `json:"ttl_in_days,omitzero"`
+}
+
 // CreatePATRequestInput is the request projection of CreatePATRequest.
 type CreatePATRequestInput struct {
 	// Required. Must be in the future, at most seven days (JWT) or 365 days (PV1)
@@ -2860,4 +3122,49 @@ type CreatePATRequestScopeInput struct {
 	// If omitted, inherits the parent PAT's role cap, or applies no role cap
 	// when authenticating with IAM.
 	Role *RepoRole `json:"role,omitzero"`
+}
+
+// MultiLinkInviteeInput is the request projection of MultiLinkInvitee.
+type MultiLinkInviteeInput struct {
+	// Email address (for external users)
+	Email *string `json:"email,omitzero"`
+	// User ID (for registered users)
+	UserID *string `json:"user_id,omitzero"`
+}
+
+// RemoveMultiLinkInviteesBodyInput is the request projection of RemoveMultiLinkInviteesBody.
+type RemoveMultiLinkInviteesBodyInput struct {
+	// Invitees to remove from the allow-list. Entries not present are ignored.
+	Invitees []MultiLinkInviteeInput `json:"invitees,omitzero"`
+}
+
+// RepoAssignmentInput is the request projection of RepoAssignment.
+type RepoAssignmentInput struct {
+	// Repository ID
+	RepoID *string `json:"repo_id,omitzero"`
+	// Repository role granted to invitees
+	RepoRole *RepoRole `json:"repo_role,omitzero"`
+	// Repository slug
+	RepoSlug *string `json:"repo_slug,omitzero"`
+}
+
+// UpdateMultiLinkBodyInput is the request projection of UpdateMultiLinkBody.
+type UpdateMultiLinkBodyInput struct {
+	// Maximum number of invitees who can accept the invitation
+	InviteeCount *int64 `json:"invitee_count,omitzero"`
+	// Organization role granted to invitees upon acceptance. For now supports only repository roles
+	// (applied to all repositories in organization)
+	OrgRole *RepoRole `json:"org_role,omitzero"`
+	// Repository role granted to invitees upon acceptance. Applies only when the
+	// multi-link already targets a repository.
+	RepoRole *RepoRole `json:"repo_role,omitzero"`
+	// IAM group ID of the team users join upon acceptance. Obtain it from
+	// GET /orgs/{org_slug}/teams.
+	// Must belong to this organization. The caller must be able to manage its members.
+	// Include team_id in update_mask and omit or clear its value to remove the assignment.
+	// Without team_id in update_mask, the assignment is unchanged. Changes affect only
+	// acceptances scheduled after the update; existing team members are not moved.
+	TeamID *string `json:"team_id,omitzero"`
+	// Time-to-live in days. If unset, the link never expires.
+	TtlInDays *int64 `json:"ttl_in_days,omitzero"`
 }

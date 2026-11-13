@@ -256,6 +256,8 @@ func TestAppSecEveryModelAgainstOpenAPI(t *testing.T) {
 		"Commit":                               reflect.TypeFor[sourcecraft.AppSecCommit](),
 		"CreateCommentRequest":                 reflect.TypeFor[sourcecraft.AppSecCreateCommentRequest](),
 		"DastContext":                          reflect.TypeFor[sourcecraft.AppSecDastContext](),
+		"DastScanRequest":                      reflect.TypeFor[sourcecraft.AppSecDastScanRequest](),
+		"DastScanResponse":                     reflect.TypeFor[sourcecraft.AppSecDastScanResponse](),
 		"DefectGroup":                          reflect.TypeFor[sourcecraft.AppSecDefectGroup](),
 		"DefectGroupDto":                       reflect.TypeFor[sourcecraft.AppSecDefectGroupDTO](),
 		"DefectGroupLinkDto":                   reflect.TypeFor[sourcecraft.AppSecDefectGroupLinkDTO](),
@@ -309,7 +311,7 @@ func TestAppSecEveryModelAgainstOpenAPI(t *testing.T) {
 		"UpdateCommentRequest":                 reflect.TypeFor[sourcecraft.AppSecUpdateCommentRequest](),
 	}
 	spec := readAppSecContract(t)
-	if len(models) != len(spec.Components.Schemas) || len(models) != 72 {
+	if len(models) != len(spec.Components.Schemas) || len(models) != 74 {
 		t.Fatalf("%d Go models, %d schemas", len(models), len(spec.Components.Schemas))
 	}
 	for name, schema := range spec.Components.Schemas {
@@ -346,6 +348,12 @@ func TestAppSecEveryModelAgainstOpenAPI(t *testing.T) {
 						t.Fatalf("nullable field %s: %v", field, err)
 					}
 					value := optionField(t, model.Elem(), field)
+					if name == "ReportUploadForm" && field == "engineName" {
+						if value.Kind() != reflect.String || value.String() != "" {
+							t.Errorf("engineName should decode null to the zero value of the Go string field")
+						}
+						continue
+					}
 					if value.Kind() != reflect.Pointer && value.Kind() != reflect.Map && value.Kind() != reflect.Slice {
 						t.Fatalf("nullable field %s has non-nullable Go type %s", field, value.Type())
 					}
@@ -389,8 +397,8 @@ func appSecContractMethods() map[string]string {
 		"post /v1/reports/upload":                              "UploadReport",
 		"get /v1/repositories":                                 "ListRepositories",
 		"get /v1/scans":                                        "ListScans",
+		"post /v1/scans/dast":                                  "StartDASTScan",
 		"get /v1/scans/latest":                                 "GetLatestScan",
-		"get /v1/scans/latest-running":                         "GetLatestRunningScan",
 		"post /v1/scans/sca":                                   "StartSCAScan",
 		"get /v1/scans/{scanUuid}":                             "GetScan",
 	}

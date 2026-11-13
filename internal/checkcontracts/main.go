@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const maxSpecBytes = 32 << 20
@@ -218,7 +219,7 @@ func readManifest(path string) ([]contract, error) {
 // canonicalizeSpec changes whitespace and object-key ordering only. UseNumber
 // preserves integer and decimal text, so even adjacent large IDs stay distinct.
 func canonicalizeSpec(data []byte) ([]byte, error) {
-	if !json.Valid(data) {
+	if !utf8.Valid(data) || !json.Valid(data) {
 		return nil, errors.New("specification is not valid JSON")
 	}
 

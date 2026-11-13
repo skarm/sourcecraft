@@ -995,10 +995,11 @@ func (c *AppSecClient) UploadReport(ctx context.Context, body *AppSecReportUploa
 		return nil, fmt.Errorf("sourcecraft: multipart field commit is required")
 	}
 	fields = append(fields, formField{"commit", string(body.Commit)})
-	if strings.TrimSpace(string(body.EngineName)) == "" {
-		return nil, fmt.Errorf("sourcecraft: multipart field engineName is required")
+	if strings.TrimSpace(body.EngineName) != "" {
+		fields = append(fields, formField{"engineName", body.EngineName})
+	} else if body.ReportType != AppSecReportUploadFormReportTypeSarif {
+		return nil, fmt.Errorf("sourcecraft: multipart field engineName is required for reports other than SARIF")
 	}
-	fields = append(fields, formField{"engineName", string(body.EngineName)})
 	if body.EngineType != nil {
 		fields = append(fields, formField{"engineType", string(*body.EngineType)})
 	}
@@ -1148,10 +1149,48 @@ func (c *AppSecClient) ListScans(ctx context.Context, opts *AppSecListScansOptio
 	return doJSON[AppSecPaginatedResponseScanSummaryDTO](ctx, c.transport(), "GET", path, opts, nil)
 }
 
+// AppSecStartDASTScanOptions contains query parameters for the AppSec API.
+type AppSecStartDASTScanOptions struct {
+	// Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).
+	GitRepo string
+}
+
+func (o *AppSecStartDASTScanOptions) queryValues() (url.Values, error) {
+	q := make(url.Values)
+	if o == nil {
+		return nil, fmt.Errorf("sourcecraft: AppSec query options are required")
+	}
+	if strings.TrimSpace(string(o.GitRepo)) == "" {
+		return nil, fmt.Errorf("sourcecraft: AppSec query parameter gitRepo is required")
+	}
+	q.Set("gitRepo", string(o.GitRepo))
+	return q, nil
+}
+
+// StartDASTScan calls POST /v1/scans/dast.
+// Start a DAST scan by URL.
+func (c *AppSecClient) StartDASTScan(ctx context.Context, body *AppSecDastScanRequest, opts *AppSecStartDASTScanOptions) (*AppSecDastScanResponse, *Response, error) {
+	if body == nil {
+		err := fmt.Errorf("sourcecraft: body is required for AppSec StartDASTScan")
+		return nil, nil, err
+	}
+	path, err := expandPath("/v1/scans/dast")
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[AppSecDastScanResponse](ctx, c.transport(), "POST", path, opts, body)
+}
+
 // AppSecGetLatestScanOptions contains query parameters for the AppSec API.
 type AppSecGetLatestScanOptions struct {
 	// Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).
 	GitRepo string
+	// Scan type: SCAN_TYPE_DEFAULT (default), SCAN_TYPE_AUDIT or SCAN_TYPE_CLOUD_DAST. Omit or leave blank for SCAN_TYPE_DEFAULT. Names are case-sensitive.
+	// The zero value uses the API default: "".
+	ScanType string
+	// Scan status: FINISHED (default), RUNNING or FAILED. Omit or leave blank for FINISHED. Names are case-sensitive.
+	// The zero value uses the API default: "".
+	Status string
 }
 
 func (o *AppSecGetLatestScanOptions) queryValues() (url.Values, error) {
@@ -1163,45 +1202,15 @@ func (o *AppSecGetLatestScanOptions) queryValues() (url.Values, error) {
 		return nil, fmt.Errorf("sourcecraft: AppSec query parameter gitRepo is required")
 	}
 	q.Set("gitRepo", string(o.GitRepo))
+	q.Set("scanType", string(o.ScanType))
+	q.Set("status", string(o.Status))
 	return q, nil
 }
 
 // GetLatestScan calls GET /v1/scans/latest.
-// Get Latest Scan.
+// Get the latest scan with the requested status and type.
 func (c *AppSecClient) GetLatestScan(ctx context.Context, opts *AppSecGetLatestScanOptions) (*AppSecScanSummaryDTO, *Response, error) {
 	path, err := expandPath("/v1/scans/latest")
-	if err != nil {
-		return nil, nil, err
-	}
-	return doJSON[AppSecScanSummaryDTO](ctx, c.transport(), "GET", path, opts, nil)
-}
-
-// AppSecGetLatestRunningScanOptions contains query parameters for the AppSec API.
-type AppSecGetLatestRunningScanOptions struct {
-	// Repository identifier. Accepts either internal repository ID (e.g., 88769874964302633) or public UUID (e.g., 0199140f-4343-7c06-a7e3-b835c305b629). These values can be obtained from the getRepo API (fields: id and uuid).
-	GitRepo string
-	// Scan type: SCAN_TYPE_DEFAULT (default), SCAN_TYPE_AUDIT or SCAN_TYPE_CLOUD_DAST. Omit or leave blank for SCAN_TYPE_DEFAULT. Names are case-sensitive.
-	// The zero value uses the API default: "".
-	ScanType string
-}
-
-func (o *AppSecGetLatestRunningScanOptions) queryValues() (url.Values, error) {
-	q := make(url.Values)
-	if o == nil {
-		return nil, fmt.Errorf("sourcecraft: AppSec query options are required")
-	}
-	if strings.TrimSpace(string(o.GitRepo)) == "" {
-		return nil, fmt.Errorf("sourcecraft: AppSec query parameter gitRepo is required")
-	}
-	q.Set("gitRepo", string(o.GitRepo))
-	q.Set("scanType", string(o.ScanType))
-	return q, nil
-}
-
-// GetLatestRunningScan calls GET /v1/scans/latest-running.
-// Get the latest running scan of the requested type.
-func (c *AppSecClient) GetLatestRunningScan(ctx context.Context, opts *AppSecGetLatestRunningScanOptions) (*AppSecScanSummaryDTO, *Response, error) {
-	path, err := expandPath("/v1/scans/latest-running")
 	if err != nil {
 		return nil, nil, err
 	}

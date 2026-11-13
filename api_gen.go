@@ -10,6 +10,105 @@ import (
 	"strconv"
 )
 
+// DeleteMultiLinkByID calls DELETE /invite-multilinks/id:{link_id}.
+// Delete Multi-Link (By Multi-Link ID).
+func (c *Client) DeleteMultiLinkByID(ctx context.Context, linkID string) (*DeleteMultiLinkOperation, *Response, error) {
+	path, err := expandPath("/invite-multilinks/id:{link_id}", pathParam{"link_id", linkID})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[DeleteMultiLinkOperation](ctx, c, http.MethodDelete, path, nil, nil)
+}
+
+// GetMultiLinkByID calls GET /invite-multilinks/id:{link_id}.
+// Get Multi-Link (By Multi-Link ID).
+func (c *Client) GetMultiLinkByID(ctx context.Context, linkID string) (*MultiLink, *Response, error) {
+	path, err := expandPath("/invite-multilinks/id:{link_id}", pathParam{"link_id", linkID})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[MultiLink](ctx, c, http.MethodGet, path, nil, nil)
+}
+
+// UpdateMultiLinkByID calls PATCH /invite-multilinks/id:{link_id}.
+// Update Multi-Link (By Multi-LinkID).
+func (c *Client) UpdateMultiLinkByID(ctx context.Context, linkID string, body *UpdateMultiLinkBodyInput) (*MultiLink, *Response, error) {
+	if body == nil {
+		err := fmt.Errorf("sourcecraft: body is required for UpdateMultiLinkByID")
+		return nil, nil, err
+	}
+	path, err := expandPath("/invite-multilinks/id:{link_id}", pathParam{"link_id", linkID})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[MultiLink](ctx, c, http.MethodPatch, path, nil, body)
+}
+
+// ListMultiLinkInviteesByIDOptions contains query parameters for ListMultiLinkInviteesByID.
+type ListMultiLinkInviteesByIDOptions struct {
+	// The maximum number of invitees to return. The service may return fewer than
+	// this value.
+	PageSize uint64
+	// A page token, received from a previous call.
+	// Provide this to retrieve the subsequent page.
+	//
+	// When paginating, all other parameters must match
+	// the call that provided the page token.
+	PageToken string
+}
+
+func (o *ListMultiLinkInviteesByIDOptions) queryValues() (url.Values, error) {
+	q := make(url.Values)
+	if o == nil {
+		return q, nil
+	}
+	if o.PageSize != 0 {
+		q.Set("page_size", strconv.FormatUint(o.PageSize, 10))
+	}
+	if o.PageToken != "" {
+		q.Set("page_token", o.PageToken)
+	}
+	return q, nil
+}
+
+// ListMultiLinkInviteesByID calls GET /invite-multilinks/id:{link_id}/invitees.
+// List Multi-Link Invitees (By Multi-Link ID).
+func (c *Client) ListMultiLinkInviteesByID(ctx context.Context, linkID string, opts *ListMultiLinkInviteesByIDOptions) (*ListMultiLinkInviteesResponse, *Response, error) {
+	path, err := expandPath("/invite-multilinks/id:{link_id}/invitees", pathParam{"link_id", linkID})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[ListMultiLinkInviteesResponse](ctx, c, http.MethodGet, path, opts, nil)
+}
+
+// AddMultiLinkInviteesByID calls POST /invite-multilinks/id:{link_id}/invitees.
+// Add Multi-Link Invitees (By Multi-Link ID).
+func (c *Client) AddMultiLinkInviteesByID(ctx context.Context, linkID string, body *AddMultiLinkInviteesBodyInput) (*Response, error) {
+	if body == nil {
+		err := fmt.Errorf("sourcecraft: body is required for AddMultiLinkInviteesByID")
+		return nil, err
+	}
+	path, err := expandPath("/invite-multilinks/id:{link_id}/invitees", pathParam{"link_id", linkID})
+	if err != nil {
+		return nil, err
+	}
+	return doEmpty(ctx, c, http.MethodPost, path, nil, body)
+}
+
+// RemoveMultiLinkInviteesByID calls POST /invite-multilinks/id:{link_id}/invitees/remove.
+// Remove Multi-Link Invitees (By Multi-Link ID).
+func (c *Client) RemoveMultiLinkInviteesByID(ctx context.Context, linkID string, body *RemoveMultiLinkInviteesBodyInput) (*Response, error) {
+	if body == nil {
+		err := fmt.Errorf("sourcecraft: body is required for RemoveMultiLinkInviteesByID")
+		return nil, err
+	}
+	path, err := expandPath("/invite-multilinks/id:{link_id}/invitees/remove", pathParam{"link_id", linkID})
+	if err != nil {
+		return nil, err
+	}
+	return doEmpty(ctx, c, http.MethodPost, path, nil, body)
+}
+
 // DeleteIssueCommentOptions contains query parameters for DeleteIssueComment.
 type DeleteIssueCommentOptions struct {
 	Silent *bool
@@ -968,6 +1067,26 @@ func (c *Client) GetOrganizationInvitesOperationByID(ctx context.Context, operat
 	return doJSON[CreateOrganizationInvitesOperation](ctx, c, http.MethodGet, path, nil, nil)
 }
 
+// GetCreateMultiLinkOperationByID calls GET /operations/create-multilink/id:{operation_id}.
+// Get multi-link creation operation status (By Operation ID).
+func (c *Client) GetCreateMultiLinkOperationByID(ctx context.Context, operationID string) (*CreateMultiLinkOperation, *Response, error) {
+	path, err := expandPath("/operations/create-multilink/id:{operation_id}", pathParam{"operation_id", operationID})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[CreateMultiLinkOperation](ctx, c, http.MethodGet, path, nil, nil)
+}
+
+// GetDeleteMultiLinkOperationByID calls GET /operations/delete-multilink/id:{operation_id}.
+// Get multi-link deletion operation status (By Operation ID).
+func (c *Client) GetDeleteMultiLinkOperationByID(ctx context.Context, operationID string) (*DeleteMultiLinkOperation, *Response, error) {
+	path, err := expandPath("/operations/delete-multilink/id:{operation_id}", pathParam{"operation_id", operationID})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[DeleteMultiLinkOperation](ctx, c, http.MethodGet, path, nil, nil)
+}
+
 // GetPullRequestMergeOperationByID calls GET /operations/merge/id:{operation_id}.
 // Get pull request merge operation status (By Operation ID).
 func (c *Client) GetPullRequestMergeOperationByID(ctx context.Context, operationID string) (*MergePullRequestOperation, *Response, error) {
@@ -976,6 +1095,16 @@ func (c *Client) GetPullRequestMergeOperationByID(ctx context.Context, operation
 		return nil, nil, err
 	}
 	return doJSON[MergePullRequestOperation](ctx, c, http.MethodGet, path, nil, nil)
+}
+
+// GetRepositoryMirroringOperationByID calls GET /operations/mirroring/id:{operation_id}.
+// Get repository mirroring operation status (By Operation ID)..
+func (c *Client) GetRepositoryMirroringOperationByID(ctx context.Context, operationID string) (*RepositoryMirroringOperation, *Response, error) {
+	path, err := expandPath("/operations/mirroring/id:{operation_id}", pathParam{"operation_id", operationID})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[RepositoryMirroringOperation](ctx, c, http.MethodGet, path, nil, nil)
 }
 
 // GetSecretOperationByID calls GET /operations/secrets/id:{operation_id}.
@@ -1092,6 +1221,67 @@ func (c *Client) TransferCodeAssistWorkplaceByID(ctx context.Context, orgID stri
 		return nil, nil, err
 	}
 	return doJSON[EmptyResponse](ctx, c, http.MethodPost, path, nil, body)
+}
+
+// ListMultiLinksByIDOptions contains query parameters for ListMultiLinksByID.
+type ListMultiLinksByIDOptions struct {
+	// Optional filter: return only multi-links associated with this repository slug
+	RepoSlug string
+	// Optional filter: return only multi-links associated with this repository ID
+	RepoID string
+	// The maximum number of multi-links to return. The service may return fewer than
+	// this value.
+	PageSize uint64
+	// A page token, received from a previous call.
+	// Provide this to retrieve the subsequent page.
+	//
+	// When paginating, all other parameters must match
+	// the call that provided the page token.
+	PageToken string
+}
+
+func (o *ListMultiLinksByIDOptions) queryValues() (url.Values, error) {
+	q := make(url.Values)
+	if o == nil {
+		return q, nil
+	}
+	if o.RepoSlug != "" {
+		q.Set("repo_slug", o.RepoSlug)
+	}
+	if o.RepoID != "" {
+		q.Set("repo_id", o.RepoID)
+	}
+	if o.PageSize != 0 {
+		q.Set("page_size", strconv.FormatUint(o.PageSize, 10))
+	}
+	if o.PageToken != "" {
+		q.Set("page_token", o.PageToken)
+	}
+	return q, nil
+}
+
+// ListMultiLinksByID calls GET /orgs/id:{org_id}/invite-multilinks.
+// List Multi-Links for an organization (By Organization ID).
+func (c *Client) ListMultiLinksByID(ctx context.Context, orgID string, opts *ListMultiLinksByIDOptions) (*ListMultiLinksResponse, *Response, error) {
+	path, err := expandPath("/orgs/id:{org_id}/invite-multilinks", pathParam{"org_id", orgID})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[ListMultiLinksResponse](ctx, c, http.MethodGet, path, opts, nil)
+}
+
+// CreateMultiLinkByID calls POST /orgs/id:{org_id}/invite-multilinks.
+// Create Multi-Link (By Organization ID).
+func (c *Client) CreateMultiLinkByID(ctx context.Context, orgID string, body *CreateMultiLinkBodyInput) (*CreateMultiLinkOperation, *Response, error) {
+	if body == nil {
+		err := fmt.Errorf("sourcecraft: body is required for CreateMultiLinkByID")
+		return nil, nil, err
+	}
+	path, err := expandPath("/orgs/id:{org_id}/invite-multilinks", pathParam{"org_id", orgID})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[CreateMultiLinkOperation](ctx, c, http.MethodPost, path, nil, body)
 }
 
 // ListOrganizationInvitesByIDOptions contains query parameters for ListOrganizationInvitesByID.
@@ -1567,6 +1757,166 @@ func (c *Client) TransferCodeAssistWorkplace(ctx context.Context, orgSlug string
 		return nil, nil, err
 	}
 	return doJSON[EmptyResponse](ctx, c, http.MethodPost, path, nil, body)
+}
+
+// ListMultiLinksOptions contains query parameters for ListMultiLinks.
+type ListMultiLinksOptions struct {
+	// Optional filter: return only multi-links associated with this repository slug
+	RepoSlug string
+	// Optional filter: return only multi-links associated with this repository ID
+	RepoID string
+	// The maximum number of multi-links to return. The service may return fewer than
+	// this value.
+	PageSize uint64
+	// A page token, received from a previous call.
+	// Provide this to retrieve the subsequent page.
+	//
+	// When paginating, all other parameters must match
+	// the call that provided the page token.
+	PageToken string
+}
+
+func (o *ListMultiLinksOptions) queryValues() (url.Values, error) {
+	q := make(url.Values)
+	if o == nil {
+		return q, nil
+	}
+	if o.RepoSlug != "" {
+		q.Set("repo_slug", o.RepoSlug)
+	}
+	if o.RepoID != "" {
+		q.Set("repo_id", o.RepoID)
+	}
+	if o.PageSize != 0 {
+		q.Set("page_size", strconv.FormatUint(o.PageSize, 10))
+	}
+	if o.PageToken != "" {
+		q.Set("page_token", o.PageToken)
+	}
+	return q, nil
+}
+
+// ListMultiLinks calls GET /orgs/{org_slug}/invite-multilinks.
+// List Multi-Links for an organization.
+func (c *Client) ListMultiLinks(ctx context.Context, orgSlug string, opts *ListMultiLinksOptions) (*ListMultiLinksResponse, *Response, error) {
+	path, err := expandPath("/orgs/{org_slug}/invite-multilinks", pathParam{"org_slug", orgSlug})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[ListMultiLinksResponse](ctx, c, http.MethodGet, path, opts, nil)
+}
+
+// CreateMultiLink calls POST /orgs/{org_slug}/invite-multilinks.
+// Create Multi-Link.
+func (c *Client) CreateMultiLink(ctx context.Context, orgSlug string, body *CreateMultiLinkBodyInput) (*CreateMultiLinkOperation, *Response, error) {
+	if body == nil {
+		err := fmt.Errorf("sourcecraft: body is required for CreateMultiLink")
+		return nil, nil, err
+	}
+	path, err := expandPath("/orgs/{org_slug}/invite-multilinks", pathParam{"org_slug", orgSlug})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[CreateMultiLinkOperation](ctx, c, http.MethodPost, path, nil, body)
+}
+
+// DeleteMultiLink calls DELETE /orgs/{org_slug}/invite-multilinks/{link_slug}.
+// Delete Multi-Link.
+func (c *Client) DeleteMultiLink(ctx context.Context, orgSlug string, linkSlug string) (*DeleteMultiLinkOperation, *Response, error) {
+	path, err := expandPath("/orgs/{org_slug}/invite-multilinks/{link_slug}", pathParam{"org_slug", orgSlug}, pathParam{"link_slug", linkSlug})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[DeleteMultiLinkOperation](ctx, c, http.MethodDelete, path, nil, nil)
+}
+
+// GetMultiLink calls GET /orgs/{org_slug}/invite-multilinks/{link_slug}.
+// Get Multi-Link.
+func (c *Client) GetMultiLink(ctx context.Context, orgSlug string, linkSlug string) (*MultiLink, *Response, error) {
+	path, err := expandPath("/orgs/{org_slug}/invite-multilinks/{link_slug}", pathParam{"org_slug", orgSlug}, pathParam{"link_slug", linkSlug})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[MultiLink](ctx, c, http.MethodGet, path, nil, nil)
+}
+
+// UpdateMultiLink calls PATCH /orgs/{org_slug}/invite-multilinks/{link_slug}.
+// Update Multi-Link.
+func (c *Client) UpdateMultiLink(ctx context.Context, orgSlug string, linkSlug string, body *UpdateMultiLinkBodyInput) (*MultiLink, *Response, error) {
+	if body == nil {
+		err := fmt.Errorf("sourcecraft: body is required for UpdateMultiLink")
+		return nil, nil, err
+	}
+	path, err := expandPath("/orgs/{org_slug}/invite-multilinks/{link_slug}", pathParam{"org_slug", orgSlug}, pathParam{"link_slug", linkSlug})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[MultiLink](ctx, c, http.MethodPatch, path, nil, body)
+}
+
+// ListMultiLinkInviteesOptions contains query parameters for ListMultiLinkInvitees.
+type ListMultiLinkInviteesOptions struct {
+	// The maximum number of invitees to return. The service may return fewer than
+	// this value.
+	PageSize uint64
+	// A page token, received from a previous call.
+	// Provide this to retrieve the subsequent page.
+	//
+	// When paginating, all other parameters must match
+	// the call that provided the page token.
+	PageToken string
+}
+
+func (o *ListMultiLinkInviteesOptions) queryValues() (url.Values, error) {
+	q := make(url.Values)
+	if o == nil {
+		return q, nil
+	}
+	if o.PageSize != 0 {
+		q.Set("page_size", strconv.FormatUint(o.PageSize, 10))
+	}
+	if o.PageToken != "" {
+		q.Set("page_token", o.PageToken)
+	}
+	return q, nil
+}
+
+// ListMultiLinkInvitees calls GET /orgs/{org_slug}/invite-multilinks/{link_slug}/invitees.
+// List Multi-Link Invitees.
+func (c *Client) ListMultiLinkInvitees(ctx context.Context, orgSlug string, linkSlug string, opts *ListMultiLinkInviteesOptions) (*ListMultiLinkInviteesResponse, *Response, error) {
+	path, err := expandPath("/orgs/{org_slug}/invite-multilinks/{link_slug}/invitees", pathParam{"org_slug", orgSlug}, pathParam{"link_slug", linkSlug})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[ListMultiLinkInviteesResponse](ctx, c, http.MethodGet, path, opts, nil)
+}
+
+// AddMultiLinkInvitees calls POST /orgs/{org_slug}/invite-multilinks/{link_slug}/invitees.
+// Add Multi-Link Invitees.
+func (c *Client) AddMultiLinkInvitees(ctx context.Context, orgSlug string, linkSlug string, body *AddMultiLinkInviteesBodyInput) (*Response, error) {
+	if body == nil {
+		err := fmt.Errorf("sourcecraft: body is required for AddMultiLinkInvitees")
+		return nil, err
+	}
+	path, err := expandPath("/orgs/{org_slug}/invite-multilinks/{link_slug}/invitees", pathParam{"org_slug", orgSlug}, pathParam{"link_slug", linkSlug})
+	if err != nil {
+		return nil, err
+	}
+	return doEmpty(ctx, c, http.MethodPost, path, nil, body)
+}
+
+// RemoveMultiLinkInvitees calls POST /orgs/{org_slug}/invite-multilinks/{link_slug}/invitees/remove.
+// Remove Multi-Link Invitees.
+func (c *Client) RemoveMultiLinkInvitees(ctx context.Context, orgSlug string, linkSlug string, body *RemoveMultiLinkInviteesBodyInput) (*Response, error) {
+	if body == nil {
+		err := fmt.Errorf("sourcecraft: body is required for RemoveMultiLinkInvitees")
+		return nil, err
+	}
+	path, err := expandPath("/orgs/{org_slug}/invite-multilinks/{link_slug}/invitees/remove", pathParam{"org_slug", orgSlug}, pathParam{"link_slug", linkSlug})
+	if err != nil {
+		return nil, err
+	}
+	return doEmpty(ctx, c, http.MethodPost, path, nil, body)
 }
 
 // ListOrganizationInvitesOptions contains query parameters for ListOrganizationInvites.
@@ -3449,6 +3799,26 @@ func (c *Client) CreateMilestoneByID(ctx context.Context, repoID string, body *C
 	return doJSON[Milestone](ctx, c, http.MethodPost, path, opts, body)
 }
 
+// GetRepositoryMirroringStatusByID calls GET /repos/id:{repo_id}/mirroring/status.
+// Get repository mirroring state and rolling quota (By ID)..
+func (c *Client) GetRepositoryMirroringStatusByID(ctx context.Context, repoID string) (*RepositoryMirroringStatus, *Response, error) {
+	path, err := expandPath("/repos/id:{repo_id}/mirroring/status", pathParam{"repo_id", repoID})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[RepositoryMirroringStatus](ctx, c, http.MethodGet, path, nil, nil)
+}
+
+// TriggerRepositoryMirroringByID calls POST /repos/id:{repo_id}/mirroring/sync.
+// Trigger one synchronization attempt for an enabled repository mirror (By ID)..
+func (c *Client) TriggerRepositoryMirroringByID(ctx context.Context, repoID string) (*RepositoryMirroringOperation, *Response, error) {
+	path, err := expandPath("/repos/id:{repo_id}/mirroring/sync", pathParam{"repo_id", repoID})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[RepositoryMirroringOperation](ctx, c, http.MethodPost, path, nil, nil)
+}
+
 // ListRepositoryPullRequestsByIDOptions contains query parameters for ListRepositoryPullRequestsByID.
 type ListRepositoryPullRequestsByIDOptions struct {
 	// The maximum number of pull requests to return. The service may return fewer than
@@ -5021,6 +5391,28 @@ func (c *Client) UpdateMilestone(ctx context.Context, orgSlug string, repoSlug s
 		return nil, nil, err
 	}
 	return doJSON[Milestone](ctx, c, http.MethodPatch, path, opts, body)
+}
+
+// GetRepositoryMirroringStatus calls GET /repos/{org_slug}/{repo_slug}/mirroring/status.
+// Get repository mirroring state and rolling quota..
+func (c *Client) GetRepositoryMirroringStatus(ctx context.Context, orgSlug string, repoSlug string) (*RepositoryMirroringStatus, *Response, error) {
+	path, err := expandPath("/repos/{org_slug}/{repo_slug}/mirroring/status", pathParam{"org_slug", orgSlug}, pathParam{"repo_slug", repoSlug})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[RepositoryMirroringStatus](ctx, c, http.MethodGet, path, nil, nil)
+}
+
+// TriggerRepositoryMirroring calls POST /repos/{org_slug}/{repo_slug}/mirroring/sync.
+// Trigger one synchronization attempt for an enabled repository mirror.
+// Repeating this request creates another attempt, consumes mirroring quota,
+// and can run concurrently with the earlier attempt..
+func (c *Client) TriggerRepositoryMirroring(ctx context.Context, orgSlug string, repoSlug string) (*RepositoryMirroringOperation, *Response, error) {
+	path, err := expandPath("/repos/{org_slug}/{repo_slug}/mirroring/sync", pathParam{"org_slug", orgSlug}, pathParam{"repo_slug", repoSlug})
+	if err != nil {
+		return nil, nil, err
+	}
+	return doJSON[RepositoryMirroringOperation](ctx, c, http.MethodPost, path, nil, nil)
 }
 
 // ListRepositoryPullRequestsOptions contains query parameters for ListRepositoryPullRequests.

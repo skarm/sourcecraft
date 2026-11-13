@@ -21,6 +21,7 @@ EmptyResponse
 Upload
 OperationFailedError
 AppSecClient
+AppSecGetLatestRunningScanOptions
 DefaultBaseURL
 DefaultAppSecBaseURL
 NewClient
@@ -37,6 +38,7 @@ method Client.WaitOrganizationInvites
 method Client.WaitSecret
 method AppSecClient.transport
 method AppSecClient.uploadReport
+method AppSecClient.GetLatestRunningScan
 method APIError.Error
 method OperationFailedError.Error
 defaultMaxResponseBytes
